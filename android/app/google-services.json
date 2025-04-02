@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "825234201175",
+    "project_id": "smart-aqua-app",
+    "storage_bucket": "smart-aqua-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:825234201175:android:0d25c85210055edf746112",
+        "android_client_info": {
+          "package_name": "com.galaxies.firebase"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "825234201175-dd5e3r3nrhtanquma54tuhiu5hubsi0i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDICmUgqRGJSbIAKfQYQC0DUS4Zz1V7poc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "825234201175-dd5e3r3nrhtanquma54tuhiu5hubsi0i.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "825234201175-k27eb6gpd0crcjtb2kum7p87e1gk0euf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "om.galaxies.firebase"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
