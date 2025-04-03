@@ -14,8 +14,8 @@
 		96905EF65AED1B983A6B3ABC /* libPods-SmartAquaApp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 58EEBF8E8E6FB1BC6CAF49B5 /* libPods-SmartAquaApp.a */; };
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		F0AF0273FE1A4FFBA1524DBB /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 204F79C60FC44D29825F208C /* GoogleService-Info.plist */; };
-		AD11629AB4AF44AB99F6A77B /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = 174386272AD94CE6AE3351DB /* noop-file.swift */; };
+		A2377A8AF3DB405F882F5919 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1B79E2AE66A641A9B942C28A /* GoogleService-Info.plist */; };
+		AEED26F7E1AD420D9F38E997 /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82045136F05F4CC593CE61F1 /* noop-file.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,9 +32,9 @@
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-SmartAquaApp/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		204F79C60FC44D29825F208C /* GoogleService-Info.plist */ = {isa = PBXFileReference; name = "GoogleService-Info.plist"; path = "SmartAquaApp/GoogleService-Info.plist"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.xml; explicitFileType = undefined; includeInIndex = 0; };
-		174386272AD94CE6AE3351DB /* noop-file.swift */ = {isa = PBXFileReference; name = "noop-file.swift"; path = "SmartAquaApp/noop-file.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
-		28EC4493ED7447F99B9D4D38 /* SmartAquaApp-Bridging-Header.h */ = {isa = PBXFileReference; name = "SmartAquaApp-Bridging-Header.h"; path = "SmartAquaApp/SmartAquaApp-Bridging-Header.h"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; explicitFileType = undefined; includeInIndex = 0; };
+		1B79E2AE66A641A9B942C28A /* GoogleService-Info.plist */ = {isa = PBXFileReference; name = "GoogleService-Info.plist"; path = "SmartAquaApp/GoogleService-Info.plist"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.xml; explicitFileType = undefined; includeInIndex = 0; };
+		82045136F05F4CC593CE61F1 /* noop-file.swift */ = {isa = PBXFileReference; name = "noop-file.swift"; path = "SmartAquaApp/noop-file.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		1F9BC77E7D5147CCB9ECB259 /* SmartAquaApp-Bridging-Header.h */ = {isa = PBXFileReference; name = "SmartAquaApp-Bridging-Header.h"; path = "SmartAquaApp/SmartAquaApp-Bridging-Header.h"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -59,9 +59,9 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				13B07FB71A68108700A75B9A /* main.m */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				204F79C60FC44D29825F208C /* GoogleService-Info.plist */,
-				174386272AD94CE6AE3351DB /* noop-file.swift */,
-				28EC4493ED7447F99B9D4D38 /* SmartAquaApp-Bridging-Header.h */,
+				1B79E2AE66A641A9B942C28A /* GoogleService-Info.plist */,
+				82045136F05F4CC593CE61F1 /* noop-file.swift */,
+				1F9BC77E7D5147CCB9ECB259 /* SmartAquaApp-Bridging-Header.h */,
 			);
 			name = SmartAquaApp;
 			sourceTree = "<group>";
@@ -201,8 +201,8 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				F0AF0273FE1A4FFBA1524DBB /* GoogleService-Info.plist in Resources */,
-				95FDBAA732314F72835C4637 /* SmartAquaApp-Bridging-Header.h in Resources */,
+				A2377A8AF3DB405F882F5919 /* GoogleService-Info.plist in Resources */,
+				7ABE8205A304447FB7D06DF5 /* SmartAquaApp-Bridging-Header.h in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -278,7 +278,7 @@
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 				B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */,
-				AD11629AB4AF44AB99F6A77B /* noop-file.swift in Sources */,
+				AEED26F7E1AD420D9F38E997 /* noop-file.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
