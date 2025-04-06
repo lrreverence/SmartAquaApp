@@ -2,8 +2,11 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 const Parameters = () => {
+	const router = useRouter();
+	
 	return (
 		<View style={styles.container}>
 			<View style={styles.card}>
@@ -41,17 +44,29 @@ const Parameters = () => {
 				<View style={styles.actionsSection}>
 					<Text style={styles.actionsHeader}>Actions</Text>
 					
-					<TouchableOpacity style={styles.actionButton}>
+					<TouchableOpacity 
+						style={styles.actionButton}
+						onPress={() => router.push('/(auth)/logs')}
+					>
 						<MaterialCommunityIcons name="chart-line" size={20} color="#007AFF" />
 						<Text style={styles.actionButtonText}>View Parameter History</Text>
 					</TouchableOpacity>
 
-					<TouchableOpacity style={styles.actionButton}>
+					<TouchableOpacity 
+						style={styles.actionButton}
+						onPress={() => router.push('/(auth)/notifications')}
+					>
 						<MaterialCommunityIcons name="bell-outline" size={20} color="#FFA500" />
 						<Text style={styles.actionButtonText}>Set Alerts & Notifications</Text>
 					</TouchableOpacity>
 
-					<TouchableOpacity style={[styles.actionButton, { marginBottom: 0 }]}>
+					<TouchableOpacity 
+						style={[styles.actionButton, { marginBottom: 0 }]}
+						onPress={() => {
+							// Add refresh functionality here
+							console.log('Refreshing data...');
+						}}
+					>
 						<MaterialCommunityIcons name="refresh" size={20} color="#007AFF" />
 						<Text style={[styles.actionButtonText, { color: '#007AFF' }]}>Refresh Data</Text>
 					</TouchableOpacity>
