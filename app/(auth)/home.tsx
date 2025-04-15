@@ -2,10 +2,29 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { Video } from 'expo-av';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import { getDatabase, ref, onValue } from "firebase/database";
+import { app } from "../firebase";
 
 const Page = () => {
 	const videoRef = useRef(null);
+	const [pH, setPH] = useState(0);
+
+	useEffect(() => {
+		// Set up real-time listener for pH data
+		const db = getDatabase(app);
+		const pHRef = ref(db, 'test/ph');
+		
+		const unsubscribe = onValue(pHRef, snapshot => {
+			const data = snapshot.val();
+			if (data !== null) {
+				setPH(data);
+			}
+		});
+
+		// Cleanup listener on component unmount
+		return () => unsubscribe();
+	}, []);
 
 	return (
 		<View style={styles.container}>
@@ -31,7 +50,7 @@ const Page = () => {
 							<Ionicons name="water-outline" size={24} color="#4A90E2" />
 							<View style={styles.statusTextContainer}>
 								<Text style={styles.statusLabel}>pH Level:</Text>
-								<Text style={styles.statusValue}>7.2</Text>
+								<Text style={styles.statusValue}>{pH.toFixed(1)}</Text>
 								<Text style={styles.statusNote}>(Normal)</Text>
 							</View>
 						</View>
