@@ -109,6 +109,7 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: '#F5F5F5',
+		position: 'relative',
 	},
 	videoContainer: {
 		height: 200,
@@ -123,6 +124,7 @@ const styles = StyleSheet.create({
 	contentContainer: {
 		flex: 1,
 		padding: 16,
+		paddingBottom: 80,
 	},
 	navbar: {
 		flexDirection: 'row',
@@ -131,6 +133,11 @@ const styles = StyleSheet.create({
 		backgroundColor: '#FFFFFF',
 		borderTopWidth: 1,
 		borderTopColor: '#E9ECEF',
+		position: 'absolute',
+		bottom: 0,
+		left: 0,
+		right: 0,
+		zIndex: 1000,
 	},
 	navItem: {
 		alignItems: 'center',
