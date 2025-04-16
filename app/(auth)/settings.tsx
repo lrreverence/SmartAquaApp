@@ -62,6 +62,25 @@ const Settings = () => {
 					</View>
 				</View>
 
+				<View style={styles.section}>
+					<Text style={styles.sectionTitle}>❓ Help & Instructions</Text>
+					<View style={styles.helpSection}>
+						<Text style={styles.helpTitle}>Getting Started</Text>
+						<Text style={styles.helpText}>1. Set your desired pH range using the threshold settings above</Text>
+						<Text style={styles.helpText}>2. Configure your notification preferences to receive alerts</Text>
+						<Text style={styles.helpText}>3. Monitor your aquarium's pH levels in real-time</Text>
+						
+						<Text style={styles.helpTitle}>System Calibration</Text>
+						<Text style={styles.helpText}>• Use "Reset Sensors" to recalibrate your pH sensors</Text>
+						<Text style={styles.helpText}>• "Test Pumps" verifies your dosing system functionality</Text>
+						
+						<Text style={styles.helpTitle}>Troubleshooting</Text>
+						<Text style={styles.helpText}>• Ensure sensors are properly submerged</Text>
+						<Text style={styles.helpText}>• Check for any error notifications</Text>
+						<Text style={styles.helpText}>• Contact support if issues persist</Text>
+					</View>
+				</View>
+
 				<View style={styles.actionButtons}>
 					<TouchableOpacity style={[styles.button, styles.saveButton]}>
 						<Text style={styles.buttonText}>Save Changes</Text>
@@ -173,6 +192,24 @@ const styles = StyleSheet.create({
 		color: '#fff',
 		fontSize: 18,
 		fontWeight: '600',
+	},
+	helpSection: {
+		backgroundColor: '#F8F9FA',
+		padding: 16,
+		borderRadius: 8,
+	},
+	helpTitle: {
+		fontSize: 16,
+		fontWeight: '600',
+		color: '#333',
+		marginTop: 12,
+		marginBottom: 8,
+	},
+	helpText: {
+		fontSize: 14,
+		color: '#666',
+		marginBottom: 4,
+		lineHeight: 20,
 	},
 });
 
