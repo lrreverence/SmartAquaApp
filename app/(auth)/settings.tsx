@@ -1,8 +1,10 @@
-import { View, Text, StyleSheet, Switch, TouchableOpacity } from 'react-native';
-import { useState } from 'react';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import auth from '@react-native-firebase/auth';
 import { useRouter } from 'expo-router';
+import { getDatabase, ref, set, onValue } from "firebase/database";
+import { app } from "../firebase";
 
 const Settings = () => {
 	const router = useRouter();
@@ -10,6 +12,22 @@ const Settings = () => {
 	const [emailAlerts, setEmailAlerts] = useState(true);
 	const [minPh, setMinPh] = useState(6.5);
 	const [maxPh, setMaxPh] = useState(7.5);
+
+	useEffect(() => {
+		// Load threshold values from Firebase
+		const db = getDatabase(app);
+		const thresholdsRef = ref(db, 'thresholds');
+		
+		const unsubscribe = onValue(thresholdsRef, (snapshot) => {
+			const data = snapshot.val();
+			if (data) {
+				setMinPh(data.minPh || 6.5);
+				setMaxPh(data.maxPh || 7.5);
+			}
+		});
+
+		return () => unsubscribe();
+	}, []);
 
 	const handleLogout = async () => {
 		try {
@@ -20,14 +38,84 @@ const Settings = () => {
 		}
 	};
 
+	const handleSave = async () => {
+		if (minPh >= maxPh) {
+			Alert.alert(
+				"Invalid pH Range",
+				"Minimum pH must be less than maximum pH",
+				[{ text: "OK" }]
+			);
+			return;
+		}
+
+		try {
+			const db = getDatabase(app);
+			await set(ref(db, 'thresholds'), {
+				minPh,
+				maxPh
+			});
+			
+			Alert.alert(
+				"Success",
+				"Settings saved successfully!",
+				[{ text: "OK" }]
+			);
+		} catch (error) {
+			Alert.alert(
+				"Error",
+				"Failed to save settings. Please try again.",
+				[{ text: "OK" }]
+			);
+		}
+	};
+
 	return (
 		<View style={styles.container}>
 			<View style={styles.card}>
-				<Text style={styles.header}>⚙️ User Settings</Text>
+				<View style={styles.headerContainer}>
+					<Text style={styles.header}>⚙️ User Settings</Text>
+					<TouchableOpacity 
+						style={styles.helpIcon}
+						onPress={() => router.push('/help')}
+					>
+						<Ionicons name="help-circle-outline" size={24} color="#666" />
+					</TouchableOpacity>
+				</View>
 				
 				<View style={styles.section}>
 					<Text style={styles.sectionTitle}>📊 pH Threshold Settings</Text>
-					<Text style={styles.phRange}>[ Min pH: {minPh} ] - [ Max pH: {maxPh} ]</Text>
+					<View style={styles.phInputContainer}>
+						<View style={styles.phInput}>
+							<Text style={styles.phLabel}>Min pH:</Text>
+							<TextInput
+								style={styles.input}
+								value={minPh.toString()}
+								onChangeText={(text) => {
+									const value = parseFloat(text);
+									if (!isNaN(value)) {
+										setMinPh(value);
+									}
+								}}
+								keyboardType="numeric"
+								placeholder="6.5"
+							/>
+						</View>
+						<View style={styles.phInput}>
+							<Text style={styles.phLabel}>Max pH:</Text>
+							<TextInput
+								style={styles.input}
+								value={maxPh.toString()}
+								onChangeText={(text) => {
+									const value = parseFloat(text);
+									if (!isNaN(value)) {
+										setMaxPh(value);
+									}
+								}}
+								keyboardType="numeric"
+								placeholder="7.5"
+							/>
+						</View>
+					</View>
 				</View>
 
 				<View style={styles.section}>
@@ -62,30 +150,21 @@ const Settings = () => {
 					</View>
 				</View>
 
-				<View style={styles.section}>
-					<Text style={styles.sectionTitle}>❓ Help & Instructions</Text>
-					<View style={styles.helpSection}>
-						<Text style={styles.helpTitle}>Getting Started</Text>
-						<Text style={styles.helpText}>1. Set your desired pH range using the threshold settings above</Text>
-						<Text style={styles.helpText}>2. Configure your notification preferences to receive alerts</Text>
-						<Text style={styles.helpText}>3. Monitor your aquarium's pH levels in real-time</Text>
-						
-						<Text style={styles.helpTitle}>System Calibration</Text>
-						<Text style={styles.helpText}>• Use "Reset Sensors" to recalibrate your pH sensors</Text>
-						<Text style={styles.helpText}>• "Test Pumps" verifies your dosing system functionality</Text>
-						
-						<Text style={styles.helpTitle}>Troubleshooting</Text>
-						<Text style={styles.helpText}>• Ensure sensors are properly submerged</Text>
-						<Text style={styles.helpText}>• Check for any error notifications</Text>
-						<Text style={styles.helpText}>• Contact support if issues persist</Text>
-					</View>
-				</View>
-
 				<View style={styles.actionButtons}>
-					<TouchableOpacity style={[styles.button, styles.saveButton]}>
+					<TouchableOpacity 
+						style={[styles.button, styles.saveButton]}
+						onPress={handleSave}
+					>
 						<Text style={styles.buttonText}>Save Changes</Text>
 					</TouchableOpacity>
-					<TouchableOpacity style={[styles.button, styles.cancelButton]}>
+					<TouchableOpacity 
+						style={[styles.button, styles.cancelButton]}
+						onPress={() => {
+							// Reset to default values
+							setMinPh(6.5);
+							setMaxPh(7.5);
+						}}
+					>
 						<Text style={styles.buttonText}>Cancel</Text>
 					</TouchableOpacity>
 				</View>
@@ -115,15 +194,22 @@ const styles = StyleSheet.create({
 		shadowRadius: 4,
 		elevation: 3,
 	},
+	headerContainer: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		marginBottom: 20,
+		borderBottomWidth: 1,
+		borderBottomColor: '#eee',
+		paddingBottom: 10,
+	},
 	header: {
 		fontSize: 24,
 		fontWeight: 'bold',
 		color: '#333',
-		marginBottom: 20,
-		textAlign: 'center',
-		borderBottomWidth: 1,
-		borderBottomColor: '#eee',
-		paddingBottom: 10,
+	},
+	helpIcon: {
+		padding: 8,
 	},
 	section: {
 		marginBottom: 24,
@@ -134,10 +220,27 @@ const styles = StyleSheet.create({
 		color: '#333',
 		marginBottom: 12,
 	},
-	phRange: {
-		fontSize: 16,
+	phInputContainer: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		gap: 12,
+		marginTop: 8,
+	},
+	phInput: {
+		flex: 1,
+	},
+	phLabel: {
+		fontSize: 14,
 		color: '#666',
-		textAlign: 'center',
+		marginBottom: 4,
+	},
+	input: {
+		borderWidth: 1,
+		borderColor: '#ddd',
+		borderRadius: 8,
+		padding: 8,
+		fontSize: 16,
+		backgroundColor: '#fff',
 	},
 	preference: {
 		flexDirection: 'row',
@@ -192,24 +295,6 @@ const styles = StyleSheet.create({
 		color: '#fff',
 		fontSize: 18,
 		fontWeight: '600',
-	},
-	helpSection: {
-		backgroundColor: '#F8F9FA',
-		padding: 16,
-		borderRadius: 8,
-	},
-	helpTitle: {
-		fontSize: 16,
-		fontWeight: '600',
-		color: '#333',
-		marginTop: 12,
-		marginBottom: 8,
-	},
-	helpText: {
-		fontSize: 14,
-		color: '#666',
-		marginBottom: 4,
-		lineHeight: 20,
 	},
 });
 

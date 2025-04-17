@@ -1,13 +1,49 @@
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
+import { useState, useEffect } from 'react';
+import { getDatabase, ref, onValue } from "firebase/database";
+import { app } from "../firebase";
 
 const LogsPage = () => {
-  const logs = [
+  const [logs, setLogs] = useState([
     { timestamp: '2025-03-19 08:30 AM', message: 'Water change 50%', icon: '💧' },
     { timestamp: '2025-03-19 06:00 AM', message: 'pH adjusted (7.1)', icon: '💧' },
     { timestamp: '2025-03-18 10:15 PM', message: 'Low water level', icon: '💧' },
-  ];
+  ]);
+  const [pH, setPH] = useState(0);
+
+  useEffect(() => {
+    // Set up real-time listener for pH data
+    const db = getDatabase(app);
+    const pHRef = ref(db, 'test/ph');
+    
+    const unsubscribe = onValue(pHRef, snapshot => {
+      const data = snapshot.val();
+      if (data !== null) {
+        setPH(data);
+        // Add new log entry when pH changes
+        const now = new Date();
+        const timestamp = now.toLocaleString('en-US', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        });
+        
+        setLogs(prevLogs => [{
+          timestamp,
+          message: `pH Level: ${data.toFixed(1)}`,
+          icon: '📊'
+        }, ...prevLogs.slice(0, 9)]); // Keep last 10 logs
+      }
+    });
+
+    // Cleanup listener on component unmount
+    return () => unsubscribe();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -32,8 +68,11 @@ const LogsPage = () => {
           <Text style={styles.footerButtonText}>← Back</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.footerButton}>
-          <Text style={styles.footerButtonText}>🔍 Filter Logs</Text>
+        <TouchableOpacity 
+          style={styles.footerButton}
+          onPress={() => setLogs([])}
+        >
+          <Text style={styles.footerButtonText}>🗑️ Clear Logs</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.footerButton}>

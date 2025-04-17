@@ -9,22 +9,43 @@ import { app } from "../firebase";
 const Page = () => {
 	const videoRef = useRef(null);
 	const [pH, setPH] = useState(0);
+	const [minPh, setMinPh] = useState(6.5);
+	const [maxPh, setMaxPh] = useState(8.5);
 
 	useEffect(() => {
 		// Set up real-time listener for pH data
 		const db = getDatabase(app);
 		const pHRef = ref(db, 'test/ph');
+		const thresholdsRef = ref(db, 'thresholds');
 		
-		const unsubscribe = onValue(pHRef, snapshot => {
+		const unsubscribePh = onValue(pHRef, snapshot => {
 			const data = snapshot.val();
 			if (data !== null) {
 				setPH(data);
 			}
 		});
 
-		// Cleanup listener on component unmount
-		return () => unsubscribe();
+		const unsubscribeThresholds = onValue(thresholdsRef, snapshot => {
+			const data = snapshot.val();
+			if (data) {
+				setMinPh(data.minPh || 6.5);
+				setMaxPh(data.maxPh || 8.5);
+			}
+		});
+
+		// Cleanup listeners on component unmount
+		return () => {
+			unsubscribePh();
+			unsubscribeThresholds();
+		};
 	}, []);
+
+	const getPhStatus = () => {
+		if (pH < minPh || pH > maxPh) {
+			return 'Critical';
+		}
+		return 'Normal';
+	};
 
 	return (
 		<View style={styles.container}>
@@ -51,7 +72,16 @@ const Page = () => {
 							<View style={styles.statusTextContainer}>
 								<Text style={styles.statusLabel}>pH Level:</Text>
 								<Text style={styles.statusValue}>{pH.toFixed(1)}</Text>
-								<Text style={styles.statusNote}>(Normal)</Text>
+								<Text style={[styles.statusNote, getPhStatus() === 'Critical' ? styles.criticalText : null]}>
+									({getPhStatus()})
+								</Text>
+							</View>
+						</View>
+						<View style={styles.statusItem}>
+							<Ionicons name="git-compare-outline" size={24} color="#4A90E2" />
+							<View style={styles.statusTextContainer}>
+								<Text style={styles.statusLabel}>Normal Range:</Text>
+								<Text style={styles.statusValue}>{minPh.toFixed(1)} - {maxPh.toFixed(1)}</Text>
 							</View>
 						</View>
 						<View style={styles.statusItem}>
@@ -239,6 +269,10 @@ const styles = StyleSheet.create({
 		color: '#4A90E2',
 		marginTop: 8,
 		fontSize: 14,
+	},
+	criticalText: {
+		color: '#FF6B6B',
+		fontWeight: 'bold',
 	},
 });
 
