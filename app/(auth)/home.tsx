@@ -1,27 +1,46 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Link } from 'expo-router';
+import { Link, usePathname } from 'expo-router';
 import { Video } from 'expo-av';
 import { useRef, useState, useEffect } from 'react';
-import { getDatabase, ref, onValue } from "firebase/database";
+import { getDatabase, ref, onValue, set } from "firebase/database";
 import { app } from "../firebase";
 
 const Page = () => {
 	const videoRef = useRef(null);
 	const [pH, setPH] = useState(0);
+	const [waterLevel, setWaterLevel] = useState(0);
 	const [minPh, setMinPh] = useState(6.5);
 	const [maxPh, setMaxPh] = useState(8.5);
+	const [lastWaterChange, setLastWaterChange] = useState<Date | null>(null);
+	const pathname = usePathname();
+	const isHomeSelected = pathname === '/(auth)/home';
 
 	useEffect(() => {
 		// Set up real-time listener for pH data
 		const db = getDatabase(app);
 		const pHRef = ref(db, 'test/ph');
+		const waterLevelRef = ref(db, 'test/water_level');
 		const thresholdsRef = ref(db, 'thresholds');
+		const lastWaterChangeRef = ref(db, 'last_water_change');
 		
 		const unsubscribePh = onValue(pHRef, snapshot => {
 			const data = snapshot.val();
 			if (data !== null) {
 				setPH(data);
+				// Check if pH is out of range and update last water change
+				if (data < minPh || data > maxPh) {
+					const currentTime = new Date();
+					setLastWaterChange(currentTime);
+					set(lastWaterChangeRef, currentTime.toISOString());
+				}
+			}
+		});
+
+		const unsubscribeWaterLevel = onValue(waterLevelRef, snapshot => {
+			const data = snapshot.val();
+			if (data !== null) {
+				setWaterLevel(data);
 			}
 		});
 
@@ -33,18 +52,49 @@ const Page = () => {
 			}
 		});
 
+		const unsubscribeLastWaterChange = onValue(lastWaterChangeRef, snapshot => {
+			const data = snapshot.val();
+			if (data) {
+				setLastWaterChange(new Date(data));
+			}
+		});
+
 		// Cleanup listeners on component unmount
 		return () => {
 			unsubscribePh();
+			unsubscribeWaterLevel();
 			unsubscribeThresholds();
+			unsubscribeLastWaterChange();
 		};
-	}, []);
+	}, [minPh, maxPh]);
 
 	const getPhStatus = () => {
 		if (pH < minPh || pH > maxPh) {
 			return 'Critical';
 		}
 		return 'Normal';
+	};
+
+	const getWaterLevelStatus = () => {
+		if (waterLevel < 20) {
+			return 'Critical';
+		} else if (waterLevel < 50) {
+			return 'Low';
+		}
+		return 'Stable';
+	};
+
+	const getTimeSinceLastWaterChange = () => {
+		if (!lastWaterChange) return 'Never';
+		const now = new Date();
+		const diffInMinutes = Math.floor((now.getTime() - lastWaterChange.getTime()) / (1000 * 60));
+		
+		if (diffInMinutes < 60) {
+			return `${diffInMinutes} Minutes Ago`;
+		}
+		
+		const diffInHours = Math.floor(diffInMinutes / 60);
+		return `${diffInHours} Hours Ago`;
 	};
 
 	return (
@@ -71,7 +121,7 @@ const Page = () => {
 							<Ionicons name="water-outline" size={24} color="#4A90E2" />
 							<View style={styles.statusTextContainer}>
 								<Text style={styles.statusLabel}>pH Level:</Text>
-								<Text style={styles.statusValue}>{pH.toFixed(1)}</Text>
+								<Text style={styles.statusValue}>{pH.toFixed(2)}</Text>
 								<Text style={[styles.statusNote, getPhStatus() === 'Critical' ? styles.criticalText : null]}>
 									({getPhStatus()})
 								</Text>
@@ -88,13 +138,15 @@ const Page = () => {
 							<Ionicons name="thermometer-outline" size={24} color="#4A90E2" />
 							<View style={styles.statusTextContainer}>
 								<Text style={styles.statusLabel}>Water Level:</Text>
-								<Text style={styles.statusValue}>75%</Text>
-								<Text style={styles.statusNote}>(Stable)</Text>
+								<Text style={styles.statusValue}>{waterLevel}%</Text>
+								<Text style={[styles.statusNote, getWaterLevelStatus() === 'Critical' ? styles.criticalText : null]}>
+									({getWaterLevelStatus()})
+								</Text>
 							</View>
 						</View>
 						<View style={styles.lastUpdate}>
 							<Ionicons name="time-outline" size={16} color="#666" />
-							<Text style={styles.lastUpdateText}>Last Water Change: 3 Hours Ago</Text>
+							<Text style={styles.lastUpdateText}>Last Water Change: {getTimeSinceLastWaterChange()}</Text>
 						</View>
 					</View>
 				</View>
@@ -115,12 +167,6 @@ const Page = () => {
 								<Text style={styles.actionText}>View Logs</Text>
 							</TouchableOpacity>
 						</Link>
-						<Link href="/(auth)/manual-control" asChild>
-							<TouchableOpacity style={styles.actionButton}>
-								<Ionicons name="hand-right-outline" size={24} color="#4A90E2" />
-								<Text style={styles.actionText}>Manual Override</Text>
-							</TouchableOpacity>
-						</Link>
 						<TouchableOpacity style={styles.actionButton}>
 							<Ionicons name="refresh-outline" size={24} color="#4A90E2" />
 							<Text style={styles.actionText}>Refresh Data</Text>
@@ -133,7 +179,7 @@ const Page = () => {
 			<View style={styles.navbar}>
 				<Link href="/(auth)/home" asChild>
 					<TouchableOpacity style={styles.navItem}>
-						<Ionicons name="home-outline" size={24} color="#FF6B6B" />
+						<Ionicons name={isHomeSelected ? "home" : "home-outline"} size={24} color="#4A90E2" />
 						<Text style={styles.navText}>Dashboard</Text>
 					</TouchableOpacity>
 				</Link>
@@ -252,18 +298,20 @@ const styles = StyleSheet.create({
 	},
 	actionContainer: {
 		flexDirection: 'row',
-		flexWrap: 'wrap',
-		gap: 16,
 		justifyContent: 'space-between',
+		gap: 8,
 	},
 	actionButton: {
-		flexBasis: '45%',
+		flex: 1,
 		backgroundColor: '#F8F9FA',
-		padding: 16,
+		padding: 12,
 		borderRadius: 8,
 		alignItems: 'center',
 		borderWidth: 1,
 		borderColor: '#E9ECEF',
+	},
+	refreshContainer: {
+		display: 'none',
 	},
 	actionText: {
 		color: '#4A90E2',

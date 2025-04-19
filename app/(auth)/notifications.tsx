@@ -1,8 +1,10 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { getDatabase, ref, onValue } from "firebase/database";
 import { app } from "../firebase";
+import PushNotificationService from '../services/pushNotifications';
+import { useRouter } from 'expo-router';
 
 interface Notification {
   id: number;
@@ -12,10 +14,33 @@ interface Notification {
 }
 
 const NotificationsPage = () => {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [pH, setPH] = useState(0);
+  const [pushEnabled, setPushEnabled] = useState(false);
 
   useEffect(() => {
+    // Initialize push notifications
+    const pushService = PushNotificationService.getInstance();
+    
+    const setupPushNotifications = async () => {
+      try {
+        const hasPermission = await pushService.requestPermission();
+        if (hasPermission) {
+          await pushService.getToken();
+          await pushService.setupForegroundHandler();
+          await pushService.setupBackgroundHandler();
+          await pushService.setupNotificationOpenedHandler();
+          setPushEnabled(true);
+        }
+      } catch (error) {
+        console.error('Error setting up push notifications:', error);
+        Alert.alert('Error', 'Failed to set up push notifications');
+      }
+    };
+
+    setupPushNotifications();
+
     // Set up real-time listener for pH data
     const db = getDatabase(app);
     const pHRef = ref(db, 'test/ph');
@@ -27,38 +52,43 @@ const NotificationsPage = () => {
         // Check if pH is above threshold
         if (data >= 8.5) {
           // Add pH high notification
-          setNotifications(prev => [{
+          const notification = {
             id: Date.now(),
-            type: 'warning',
+            type: 'warning' as const,
             message: `⚠️ pH Level High! (${data.toFixed(1)}) - Action Needed!`,
             timestamp: new Date().toLocaleString()
-          }, ...prev]);
+          };
+          setNotifications(prev => [notification, ...prev]);
 
           // Add water change notification after 5 seconds
           setTimeout(() => {
-            setNotifications(prev => [{
+            const waterChangeNotification = {
               id: Date.now(),
-              type: 'info',
+              type: 'info' as const,
               message: '💧 Water Change Required - pH Level Critical',
               timestamp: new Date().toLocaleString()
-            }, ...prev]);
+            };
+            setNotifications(prev => [waterChangeNotification, ...prev]);
           }, 5000);
 
           // Add water change complete notification after 10 seconds
           setTimeout(() => {
-            setNotifications(prev => [{
+            const completeNotification = {
               id: Date.now(),
-              type: 'success',
+              type: 'success' as const,
               message: '✅ Water Change Completed - pH Level Stabilized',
               timestamp: new Date().toLocaleString()
-            }, ...prev]);
+            };
+            setNotifications(prev => [completeNotification, ...prev]);
           }, 20000);
         }
       }
     });
 
-    // Cleanup listener on component unmount
-    return () => unsubscribe();
+    // Cleanup listeners on component unmount
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const clearAllNotifications = () => {
@@ -68,7 +98,18 @@ const NotificationsPage = () => {
   return (
     <View style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.header}>🔔 Notifications & Alerts</Text>
+        <View style={styles.headerContainer}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.header}>🔔 Notifications & Alerts</Text>
+        </View>
+        
+        <View style={styles.pushStatus}>
+          <Text style={styles.pushStatusText}>
+            Push Notifications: {pushEnabled ? 'Enabled' : 'Disabled'}
+          </Text>
+        </View>
         
         <View style={styles.alertList}>
           {notifications.map((notification) => (
@@ -110,13 +151,31 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+  },
+  backButton: {
+    marginRight: 8,
+  },
   header: {
     fontSize: 18,
     fontWeight: 'bold',
     textAlign: 'center',
-    paddingVertical: 12,
+    flex: 1,
+  },
+  pushStatus: {
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
+  },
+  pushStatusText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
   alertList: {
     marginVertical: 16,

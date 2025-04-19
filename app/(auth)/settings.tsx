@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, Switch, TouchableOpacity, TextInput, Alert } fr
 import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import auth from '@react-native-firebase/auth';
-import { useRouter } from 'expo-router';
+import { useRouter, Link } from 'expo-router';
 import { getDatabase, ref, set, onValue } from "firebase/database";
 import { app } from "../firebase";
 
@@ -10,6 +10,7 @@ const Settings = () => {
 	const router = useRouter();
 	const [pushAlerts, setPushAlerts] = useState(true);
 	const [emailAlerts, setEmailAlerts] = useState(true);
+	const [emailAddress, setEmailAddress] = useState('');
 	const [minPh, setMinPh] = useState(6.5);
 	const [maxPh, setMaxPh] = useState(7.5);
 
@@ -23,6 +24,7 @@ const Settings = () => {
 			if (data) {
 				setMinPh(data.minPh || 6.5);
 				setMaxPh(data.maxPh || 7.5);
+				setEmailAddress(data.emailAddress || '');
 			}
 		});
 
@@ -48,11 +50,21 @@ const Settings = () => {
 			return;
 		}
 
+		if (emailAlerts && !emailAddress) {
+			Alert.alert(
+				"Email Required",
+				"Please enter an email address for email alerts",
+				[{ text: "OK" }]
+			);
+			return;
+		}
+
 		try {
 			const db = getDatabase(app);
 			await set(ref(db, 'thresholds'), {
 				minPh,
-				maxPh
+				maxPh,
+				emailAddress
 			});
 			
 			Alert.alert(
@@ -73,7 +85,15 @@ const Settings = () => {
 		<View style={styles.container}>
 			<View style={styles.card}>
 				<View style={styles.headerContainer}>
-					<Text style={styles.header}>⚙️ User Settings</Text>
+					<View style={styles.headerLeft}>
+						<TouchableOpacity 
+							style={styles.backButton}
+							onPress={() => router.back()}
+						>
+							<Ionicons name="arrow-back" size={24} color="#666" />
+						</TouchableOpacity>
+						<Text style={styles.header}>⚙️ User Settings</Text>
+					</View>
 					<TouchableOpacity 
 						style={styles.helpIcon}
 						onPress={() => router.push('/help')}
@@ -136,18 +156,19 @@ const Settings = () => {
 							trackColor={{ false: '#767577', true: '#81b0ff' }}
 						/>
 					</View>
-				</View>
-
-				<View style={styles.section}>
-					<Text style={styles.sectionTitle}>🔧 System Calibration</Text>
-					<View style={styles.buttonRow}>
-						<TouchableOpacity style={[styles.button, styles.dangerButton]}>
-							<Text style={styles.buttonText}>Reset Sensors</Text>
-						</TouchableOpacity>
-						<TouchableOpacity style={styles.button}>
-							<Text style={styles.buttonText}>Test Pumps</Text>
-						</TouchableOpacity>
-					</View>
+					{emailAlerts && (
+						<View style={styles.emailInput}>
+							<Text style={styles.emailLabel}>Email Address:</Text>
+							<TextInput
+								style={styles.input}
+								value={emailAddress}
+								onChangeText={setEmailAddress}
+								keyboardType="email-address"
+								placeholder="Enter your email"
+								autoCapitalize="none"
+							/>
+						</View>
+					)}
 				</View>
 
 				<View style={styles.actionButtons}>
@@ -168,12 +189,37 @@ const Settings = () => {
 						<Text style={styles.buttonText}>Cancel</Text>
 					</TouchableOpacity>
 				</View>
+
+				<TouchableOpacity 
+					style={styles.logoutButton} 
+					onPress={handleLogout}
+				>
+					<Ionicons name="log-out-outline" size={24} color="#fff" />
+					<Text style={styles.logoutText}>Log Out</Text>
+				</TouchableOpacity>
 			</View>
 
-			<TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-				<Ionicons name="log-out-outline" size={24} color="#fff" />
-				<Text style={styles.logoutText}>Log Out</Text>
-			</TouchableOpacity>
+			{/* Navigation Bar */}
+			<View style={styles.navbar}>
+				<Link href="/(auth)/home" asChild>
+					<TouchableOpacity style={styles.navItem}>
+						<Ionicons name="home-outline" size={24} color="#4A90E2" />
+						<Text style={styles.navText}>Dashboard</Text>
+					</TouchableOpacity>
+				</Link>
+				<Link href="/(auth)/parameters" asChild>
+					<TouchableOpacity style={styles.navItem}>
+						<Ionicons name="analytics-outline" size={24} color="#4A90E2" />
+						<Text style={styles.navText}>Parameters</Text>
+					</TouchableOpacity>
+				</Link>
+				<Link href="/(auth)/settings" asChild>
+					<TouchableOpacity style={styles.navItem}>
+						<Ionicons name="settings" size={24} color="#4A90E2" />
+						<Text style={styles.navText}>Settings</Text>
+					</TouchableOpacity>
+				</Link>
+			</View>
 		</View>
 	);
 };
@@ -193,6 +239,7 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.1,
 		shadowRadius: 4,
 		elevation: 3,
+		marginBottom: 80, // Add space for navbar
 	},
 	headerContainer: {
 		flexDirection: 'row',
@@ -202,6 +249,14 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 		borderBottomColor: '#eee',
 		paddingBottom: 10,
+	},
+	headerLeft: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 12,
+	},
+	backButton: {
+		padding: 8,
 	},
 	header: {
 		fontSize: 24,
@@ -284,17 +339,45 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
-		backgroundColor: '#757575',
+		backgroundColor: '#FF3B30',
 		padding: 16,
 		borderRadius: 8,
-		marginTop: 'auto',
-		marginBottom: 16,
+		marginTop: 16,
 		gap: 8,
 	},
 	logoutText: {
 		color: '#fff',
 		fontSize: 18,
 		fontWeight: '600',
+	},
+	emailInput: {
+		marginTop: 8,
+	},
+	emailLabel: {
+		fontSize: 14,
+		color: '#666',
+		marginBottom: 4,
+	},
+	navbar: {
+		flexDirection: 'row',
+		justifyContent: 'space-around',
+		paddingVertical: 12,
+		backgroundColor: '#FFFFFF',
+		borderTopWidth: 1,
+		borderTopColor: '#E9ECEF',
+		position: 'absolute',
+		bottom: 0,
+		left: 0,
+		right: 0,
+		zIndex: 1000,
+	},
+	navItem: {
+		alignItems: 'center',
+	},
+	navText: {
+		color: '#4A90E2',
+		fontSize: 12,
+		marginTop: 4,
 	},
 });
 

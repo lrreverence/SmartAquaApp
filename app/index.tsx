@@ -19,15 +19,61 @@ export default function Index() {
 	const [password, setPassword] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [rememberMe, setRememberMe] = useState(false);
+	const [verificationCode, setVerificationCode] = useState('');
+	const [isVerifying, setIsVerifying] = useState(false);
 
 	const signUp = async () => {
 		setLoading(true);
 		try {
-			await auth().createUserWithEmailAndPassword(email, password);
-			alert('Check your emails!');
+			const userCredential = await auth().createUserWithEmailAndPassword(email, password);
+			await userCredential.user.sendEmailVerification();
+			setIsVerifying(true);
+			alert('Check your email for a verification');
 		} catch (e: any) {
 			const err = e as FirebaseError;
 			alert('Registration failed: ' + err.message);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const verifyEmail = async () => {
+		if (verificationCode.length !== 6) {
+			alert('Please enter a valid 6-digit code');
+			return;
+		}
+
+		setLoading(true);
+		try {
+			const user = auth().currentUser;
+			if (user) {
+				await user.reload();
+				if (user.emailVerified) {
+					alert('Email verified successfully!');
+					setIsVerifying(false);
+				} else {
+					alert('Verification failed. Please try again or request a new code.');
+				}
+			}
+		} catch (e: any) {
+			const err = e as FirebaseError;
+			alert('Verification failed: ' + err.message);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const resendVerificationCode = async () => {
+		setLoading(true);
+		try {
+			const user = auth().currentUser;
+			if (user) {
+				await user.sendEmailVerification();
+				alert('A new verification code has been sent to your email.');
+			}
+		} catch (e: any) {
+			const err = e as FirebaseError;
+			alert('Failed to resend verification code: ' + err.message);
 		} finally {
 			setLoading(false);
 		}
@@ -74,6 +120,11 @@ export default function Index() {
 			>
 				<View style={styles.formContainer}>
 					<View style={styles.headerContainer}>
+						<Image 
+							source={require('../assets/images/fish-bowl.png')}
+							style={styles.appIcon}
+							resizeMode="contain"
+						/>
 						<Text style={styles.appName}>Smart Aquarium</Text>
 						<Text style={styles.subtitle}>Monitor your aquatic world</Text>
 					</View>
@@ -95,6 +146,28 @@ export default function Index() {
 						placeholder="Password"
 						placeholderTextColor="#666"
 					/>
+
+					{isVerifying && (
+						<>
+							<TextInput
+								style={styles.input}
+								value={verificationCode}
+								onChangeText={setVerificationCode}
+								keyboardType="number-pad"
+								placeholder="Enter 6-digit verification code"
+								placeholderTextColor="#666"
+								maxLength={6}
+							/>
+							<View style={styles.verificationButtons}>
+								<TouchableOpacity style={styles.verifyButton} onPress={verifyEmail}>
+									<Text style={styles.verifyButtonText}>Verify</Text>
+								</TouchableOpacity>
+								<TouchableOpacity onPress={resendVerificationCode}>
+									<Text style={styles.resendText}>Resend Code</Text>
+								</TouchableOpacity>
+							</View>
+						</>
+					)}
 					
 					<View style={styles.optionsContainer}>
 						<View style={styles.rememberMeContainer}>
@@ -144,6 +217,11 @@ const styles = StyleSheet.create({
 	headerContainer: {
 		alignItems: 'center',
 		marginBottom: 40,
+	},
+	appIcon: {
+		width: 100,
+		height: 100,
+		marginBottom: 16,
 	},
 	appName: {
 		fontSize: 36,
@@ -215,5 +293,29 @@ const styles = StyleSheet.create({
 	},
 	loader: {
 		marginTop: 24,
+	},
+	verificationButtons: {
+		flexDirection: 'row',
+		justifyContent: 'space-between',
+		alignItems: 'center',
+		marginBottom: 24,
+	},
+	verifyButton: {
+		backgroundColor: '#00BCD4',
+		padding: 12,
+		borderRadius: 8,
+		flex: 1,
+		marginRight: 12,
+	},
+	verifyButtonText: {
+		color: '#fff',
+		textAlign: 'center',
+		fontSize: 16,
+		fontWeight: '600',
+	},
+	resendText: {
+		color: '#00BCD4',
+		fontSize: 14,
+		textDecorationLine: 'underline',
 	},
 });

@@ -20,15 +20,10 @@ const Help = () => {
 			<ScrollView style={styles.content}>
 				<View style={styles.section}>
 					<Text style={styles.sectionTitle}>Getting Started</Text>
-					<Text style={styles.helpText}>1. Set your desired pH range using the threshold settings</Text>
-					<Text style={styles.helpText}>2. Configure your notification preferences to receive alerts</Text>
-					<Text style={styles.helpText}>3. Monitor your aquarium's pH levels in real-time</Text>
-				</View>
-
-				<View style={styles.section}>
-					<Text style={styles.sectionTitle}>System Calibration</Text>
-					<Text style={styles.helpText}>• Use "Reset Sensors" to recalibrate your pH sensors</Text>
-					<Text style={styles.helpText}>• "Test Pumps" verifies your dosing system functionality</Text>
+					<Text style={styles.helpText}>1. Set your desired pH and water level ranges using the threshold settings</Text>
+					<Text style={styles.helpText}>2. Configure your notification preferences to receive alerts when levels are out of range</Text>
+					<Text style={styles.helpText}>3. Monitor your aquarium's pH and water levels in real-time on the dashboard</Text>
+					<Text style={styles.helpText}>4. Receive instant alerts when pH or water levels go beyond your set thresholds</Text>
 				</View>
 
 				<View style={styles.section}>

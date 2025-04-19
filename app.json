@@ -9,13 +9,13 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-			"bundleIdentifier": "com.galaxies.firebase",
-			"googleServicesFile": "./GoogleService-Info.plist"
-		},
-		"android": {
-			"package": "com.galaxies.firebase",
-			"googleServicesFile": "./google-services.json"
-		},
+      "bundleIdentifier": "com.galaxies.firebase",
+      "googleServicesFile": "./GoogleService-Info.plist"
+    },
+    "android": {
+      "package": "com.galaxies.firebase",
+      "googleServicesFile": "./google-services.json"
+    },
     "web": {
       "bundler": "metro",
       "output": "static",
@@ -24,18 +24,26 @@
     "plugins": [
       "expo-router",
       [
-				"expo-build-properties",
-				{
-					"ios": {
-						"useFrameworks": "static"
-					}
-				}
-			],
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "fff0fc00-a426-4923-b7a1-7db0ba190f0b"
+      }
     }
   }
 }
