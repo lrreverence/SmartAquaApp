@@ -47,8 +47,8 @@ const Page = () => {
 		const unsubscribeThresholds = onValue(thresholdsRef, snapshot => {
 			const data = snapshot.val();
 			if (data) {
-				setMinPh(data.minPh || 6.5);
-				setMaxPh(data.maxPh || 8.5);
+				setMinPh(Number(data.minPh) || 6.5);
+				setMaxPh(Number(data.maxPh) || 8.5);
 			}
 		});
 
@@ -78,7 +78,7 @@ const Page = () => {
 	const getWaterLevelStatus = () => {
 		if (waterLevel < 20) {
 			return 'Critical';
-		} else if (waterLevel < 50) {
+		} else if (waterLevel < 70) {
 			return 'Low';
 		}
 		return 'Stable';

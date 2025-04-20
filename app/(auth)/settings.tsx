@@ -11,8 +11,8 @@ const Settings = () => {
 	const [pushAlerts, setPushAlerts] = useState(true);
 	const [emailAlerts, setEmailAlerts] = useState(true);
 	const [emailAddress, setEmailAddress] = useState('');
-	const [minPh, setMinPh] = useState(6.5);
-	const [maxPh, setMaxPh] = useState(7.5);
+	const [minPh, setMinPh] = useState('6.5');
+	const [maxPh, setMaxPh] = useState('7.5');
 
 	useEffect(() => {
 		// Load threshold values from Firebase
@@ -22,8 +22,8 @@ const Settings = () => {
 		const unsubscribe = onValue(thresholdsRef, (snapshot) => {
 			const data = snapshot.val();
 			if (data) {
-				setMinPh(data.minPh || 6.5);
-				setMaxPh(data.maxPh || 7.5);
+				setMinPh(data.minPh || '6.5');
+				setMaxPh(data.maxPh || '7.5');
 				setEmailAddress(data.emailAddress || '');
 			}
 		});
@@ -41,7 +41,19 @@ const Settings = () => {
 	};
 
 	const handleSave = async () => {
-		if (minPh >= maxPh) {
+		const minPhNum = parseFloat(minPh);
+		const maxPhNum = parseFloat(maxPh);
+
+		if (isNaN(minPhNum) || isNaN(maxPhNum)) {
+			Alert.alert(
+				"Invalid pH Values",
+				"Please enter valid pH numbers",
+				[{ text: "OK" }]
+			);
+			return;
+		}
+
+		if (minPhNum >= maxPhNum) {
 			Alert.alert(
 				"Invalid pH Range",
 				"Minimum pH must be less than maximum pH",
@@ -62,8 +74,8 @@ const Settings = () => {
 		try {
 			const db = getDatabase(app);
 			await set(ref(db, 'thresholds'), {
-				minPh,
-				maxPh,
+				minPh: minPh,
+				maxPh: maxPh,
 				emailAddress
 			});
 			
@@ -109,30 +121,28 @@ const Settings = () => {
 							<Text style={styles.phLabel}>Min pH:</Text>
 							<TextInput
 								style={styles.input}
-								value={minPh.toString()}
+								value={minPh}
 								onChangeText={(text) => {
-									const value = parseFloat(text);
-									if (!isNaN(value)) {
-										setMinPh(value);
+									// Allow decimal input and handle incomplete numbers
+									if (text === '' || text === '.' || /^\d*\.?\d*$/.test(text)) {
+										setMinPh(text);
 									}
 								}}
-								keyboardType="numeric"
-								placeholder="6.5"
+								keyboardType="decimal-pad"
 							/>
 						</View>
 						<View style={styles.phInput}>
 							<Text style={styles.phLabel}>Max pH:</Text>
 							<TextInput
 								style={styles.input}
-								value={maxPh.toString()}
+								value={maxPh}
 								onChangeText={(text) => {
-									const value = parseFloat(text);
-									if (!isNaN(value)) {
-										setMaxPh(value);
+									// Allow decimal input and handle incomplete numbers
+									if (text === '' || text === '.' || /^\d*\.?\d*$/.test(text)) {
+										setMaxPh(text);
 									}
 								}}
-								keyboardType="numeric"
-								placeholder="7.5"
+								keyboardType="decimal-pad"
 							/>
 						</View>
 					</View>
@@ -182,8 +192,8 @@ const Settings = () => {
 						style={[styles.button, styles.cancelButton]}
 						onPress={() => {
 							// Reset to default values
-							setMinPh(6.5);
-							setMaxPh(7.5);
+							setMinPh('6.5');
+							setMaxPh('7.5');
 						}}
 					>
 						<Text style={styles.buttonText}>Cancel</Text>

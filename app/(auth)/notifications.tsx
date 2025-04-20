@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { getDatabase, ref, onValue } from "firebase/database";
 import { app } from "../firebase";
-import PushNotificationService from '../services/pushNotifications';
 import { useRouter } from 'expo-router';
 
 interface Notification {
@@ -17,30 +16,8 @@ const NotificationsPage = () => {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [pH, setPH] = useState(0);
-  const [pushEnabled, setPushEnabled] = useState(false);
 
   useEffect(() => {
-    // Initialize push notifications
-    const pushService = PushNotificationService.getInstance();
-    
-    const setupPushNotifications = async () => {
-      try {
-        const hasPermission = await pushService.requestPermission();
-        if (hasPermission) {
-          await pushService.getToken();
-          await pushService.setupForegroundHandler();
-          await pushService.setupBackgroundHandler();
-          await pushService.setupNotificationOpenedHandler();
-          setPushEnabled(true);
-        }
-      } catch (error) {
-        console.error('Error setting up push notifications:', error);
-        Alert.alert('Error', 'Failed to set up push notifications');
-      }
-    };
-
-    setupPushNotifications();
-
     // Set up real-time listener for pH data
     const db = getDatabase(app);
     const pHRef = ref(db, 'test/ph');
@@ -105,12 +82,6 @@ const NotificationsPage = () => {
           <Text style={styles.header}>🔔 Notifications & Alerts</Text>
         </View>
         
-        <View style={styles.pushStatus}>
-          <Text style={styles.pushStatusText}>
-            Push Notifications: {pushEnabled ? 'Enabled' : 'Disabled'}
-          </Text>
-        </View>
-        
         <View style={styles.alertList}>
           {notifications.map((notification) => (
             <View key={notification.id} style={styles.alertItem}>
@@ -166,16 +137,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     flex: 1,
-  },
-  pushStatus: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
-  },
-  pushStatusText: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
   },
   alertList: {
     marginVertical: 16,
