@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "bundleIdentifier": "com.galaxies.firebase",
       "googleServicesFile": "./GoogleService-Info.plist"
@@ -51,6 +51,7 @@
       "eas": {
         "projectId": "fff0fc00-a426-4923-b7a1-7db0ba190f0b"
       }
-    }
+    },
+    "owner": "kandilasacake"
   }
 }

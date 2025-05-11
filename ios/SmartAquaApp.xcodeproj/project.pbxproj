@@ -14,6 +14,8 @@
 		96905EF65AED1B983A6B3ABC /* libPods-SmartAquaApp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 58EEBF8E8E6FB1BC6CAF49B5 /* libPods-SmartAquaApp.a */; };
 		B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
+		DE8877D3F46F4FA5B4669C42 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A873A7A13D5F48E889CDE3F7 /* GoogleService-Info.plist */; };
+		01ABA13934EB4EA4B57C45BF /* noop-file.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79CB7631802E438E9C320D10 /* noop-file.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +32,9 @@
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		FAC715A2D49A985799AEE119 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-SmartAquaApp/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		A873A7A13D5F48E889CDE3F7 /* GoogleService-Info.plist */ = {isa = PBXFileReference; name = "GoogleService-Info.plist"; path = "SmartAquaApp/GoogleService-Info.plist"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = text.plist.xml; explicitFileType = undefined; includeInIndex = 0; };
+		79CB7631802E438E9C320D10 /* noop-file.swift */ = {isa = PBXFileReference; name = "noop-file.swift"; path = "SmartAquaApp/noop-file.swift"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.swift; explicitFileType = undefined; includeInIndex = 0; };
+		82A730FB90B64466AF4DEAF8 /* SmartAquaApp-Bridging-Header.h */ = {isa = PBXFileReference; name = "SmartAquaApp-Bridging-Header.h"; path = "SmartAquaApp/SmartAquaApp-Bridging-Header.h"; sourceTree = "<group>"; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +59,9 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				13B07FB71A68108700A75B9A /* main.m */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
+				A873A7A13D5F48E889CDE3F7 /* GoogleService-Info.plist */,
+				79CB7631802E438E9C320D10 /* noop-file.swift */,
+				82A730FB90B64466AF4DEAF8 /* SmartAquaApp-Bridging-Header.h */,
 			);
 			name = SmartAquaApp;
 			sourceTree = "<group>";
@@ -193,6 +201,8 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
+				DE8877D3F46F4FA5B4669C42 /* GoogleService-Info.plist in Resources */,
+				FE2A5D1E5C2F4EC5A5EACF5D /* SmartAquaApp-Bridging-Header.h in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -268,6 +278,7 @@
 				13B07FBC1A68108700A75B9A /* AppDelegate.mm in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 				B18059E884C0ABDD17F3DC3D /* ExpoModulesProvider.swift in Sources */,
+				01ABA13934EB4EA4B57C45BF /* noop-file.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -295,11 +306,14 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = org.name.SmartAquaApp;
-				PRODUCT_NAME = SmartAquaApp;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.galaxies.firebase";
+				PRODUCT_NAME = "SmartAquaApp";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
+				TARGETED_DEVICE_FAMILY = "1";
+				SWIFT_OBJC_BRIDGING_HEADER = SmartAquaApp/SmartAquaApp-Bridging-Header.h;
+				CODE_SIGN_ENTITLEMENTS = SmartAquaApp/SmartAquaApp.entitlements;
 			};
 			name = Debug;
 		};
@@ -319,10 +333,13 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = org.name.SmartAquaApp;
-				PRODUCT_NAME = SmartAquaApp;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.galaxies.firebase";
+				PRODUCT_NAME = "SmartAquaApp";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
+				TARGETED_DEVICE_FAMILY = "1";
+				SWIFT_OBJC_BRIDGING_HEADER = SmartAquaApp/SmartAquaApp-Bridging-Header.h;
+				CODE_SIGN_ENTITLEMENTS = SmartAquaApp/SmartAquaApp.entitlements;
 			};
 			name = Release;
 		};

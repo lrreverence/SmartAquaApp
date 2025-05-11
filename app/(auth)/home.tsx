@@ -170,6 +170,12 @@ const Page = () => {
 								<Text style={styles.actionText}>View Logs</Text>
 							</TouchableOpacity>
 						</Link>
+						<Link href="/(auth)/push-test" asChild>
+							<TouchableOpacity style={styles.actionButton}>
+								<Ionicons name="push-outline" size={24} color="#4A90E2" />
+								<Text style={styles.actionText}>Test Push</Text>
+							</TouchableOpacity>
+						</Link>
 						<TouchableOpacity style={styles.actionButton}>
 							<Ionicons name="refresh-outline" size={24} color="#4A90E2" />
 							<Text style={styles.actionText}>Refresh Data</Text>
