@@ -2,6 +2,9 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect, useState } from 'react';
 import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { View, ActivityIndicator } from 'react-native';
+import PushNotificationService from './services/pushNotifications';
+import { getDatabase, ref, set } from 'firebase/database';
+import { app } from './firebase';
 
 export default function RootLayout() {
 	const [initializing, setInitializing] = useState(true);
@@ -9,10 +12,25 @@ export default function RootLayout() {
 	const router = useRouter();
 	const segments = useSegments();
 
-	const onAuthStateChanged = (user: FirebaseAuthTypes.User | null) => {
+	const onAuthStateChanged = async (user: FirebaseAuthTypes.User | null) => {
 		console.log('onAuthStateChanged', user);
 		setUser(user);
 		if (initializing) setInitializing(false);
+
+		// Initialize push notifications when user is logged in
+		if (user) {
+			const pushService = PushNotificationService.getInstance();
+			const hasPermission = await pushService.requestUserPermission();
+			if (hasPermission) {
+				const token = await pushService.getExpoPushToken();
+				if (token) {
+					// Save the token to Firebase for this user
+					const db = getDatabase(app);
+					await set(ref(db, `thresholds/${user.uid}/expoPushToken`), token);
+				}
+				pushService.setupNotificationListeners();
+			}
+		}
 	};
 
 	useEffect(() => {
