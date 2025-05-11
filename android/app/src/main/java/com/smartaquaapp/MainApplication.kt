@@ -1,4 +1,4 @@
-package com.galaxies.firebase
+package com.smartaquaapp
 
 import android.app.Application
 import android.content.res.Configuration
