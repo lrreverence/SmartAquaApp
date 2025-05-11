@@ -57,8 +57,10 @@ const Parameters = () => {
 	}, []);
 
 	const getPhStatus = () => {
-		if (pH < minPh || pH > maxPh) {
-			return 'Above Normal';
+		if (pH < minPh) {
+			return 'Acidic';
+		} else if (pH > maxPh) {
+			return 'Alkaline';
 		}
 		return 'Normal';
 	};

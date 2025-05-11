@@ -42,7 +42,7 @@ const NotificationsPage = () => {
             const waterChangeNotification = {
               id: Date.now(),
               type: 'info' as const,
-              message: '💧 Water Change Required - pH Level Critical',
+              message: `💧 Water Change Required - pH Level ${data >= 8.5 ? 'Alkaline' : 'Acidic'}`,
               timestamp: new Date().toLocaleString()
             };
             setNotifications(prev => [waterChangeNotification, ...prev]);

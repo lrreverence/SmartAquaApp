@@ -69,8 +69,10 @@ const Page = () => {
 	}, [minPh, maxPh]);
 
 	const getPhStatus = () => {
-		if (pH < minPh || pH > maxPh) {
-			return 'Critical';
+		if (pH < minPh) {
+			return 'Acidic';
+		} else if (pH > maxPh) {
+			return 'Alkaline';
 		}
 		return 'Normal';
 	};
@@ -122,7 +124,7 @@ const Page = () => {
 							<View style={styles.statusTextContainer}>
 								<Text style={styles.statusLabel}>pH Level:</Text>
 								<Text style={styles.statusValue}>{pH.toFixed(2)}</Text>
-								<Text style={[styles.statusNote, getPhStatus() === 'Critical' ? styles.criticalText : null]}>
+								<Text style={[styles.statusNote, (getPhStatus() === 'Acidic' || getPhStatus() === 'Alkaline') ? styles.criticalText : null]}>
 									({getPhStatus()})
 								</Text>
 							</View>
