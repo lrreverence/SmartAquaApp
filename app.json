@@ -7,14 +7,16 @@
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.galaxies.firebase",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "package": "com.galaxies.firebase",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "jsEngine": "hermes",
+      "newArchEnabled": true
     },
     "web": {
       "bundler": "metro",

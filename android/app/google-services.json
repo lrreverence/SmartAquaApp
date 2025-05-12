@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "825234201175",
+    "firebase_url": "https://smart-aqua-app-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "smart-aqua-app",
     "storage_bucket": "smart-aqua-app.firebasestorage.app"
   },
@@ -13,6 +14,14 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "825234201175-41ovpqh4olc8tsf3a4vtfhrt22a38ajb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.galaxies.firebase",
+            "certificate_hash": "64e591f6996677f550c981f8cbc6ccd5b30dae8a"
+          }
+        },
         {
           "client_id": "825234201175-dd5e3r3nrhtanquma54tuhiu5hubsi0i.apps.googleusercontent.com",
           "client_type": 3

@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Link, usePathname } from 'expo-router';
 import { Video } from 'expo-av';
 import { useRef, useState, useEffect } from 'react';
-import { getDatabase, ref, onValue, set } from "firebase/database";
+import { getDatabase, ref, onValue, set, onDisconnect } from "firebase/database";
 import { app } from "../firebase";
 
 
@@ -14,6 +14,12 @@ const Page = () => {
 	const [minPh, setMinPh] = useState(6.5);
 	const [maxPh, setMaxPh] = useState(8.5);
 	const [lastWaterChange, setLastWaterChange] = useState<Date | null>(null);
+	const [isPhSensorConnected, setIsPhSensorConnected] = useState(false);
+	const [isWaterSensorConnected, setIsWaterSensorConnected] = useState(false);
+	const [lastPhUpdate, setLastPhUpdate] = useState<Date | null>(null);
+	const [lastWaterUpdate, setLastWaterUpdate] = useState<Date | null>(null);
+	const [previousPhValues, setPreviousPhValues] = useState<number[]>([]);
+	const [previousWaterValues, setPreviousWaterValues] = useState<number[]>([]);
 	const pathname = usePathname();
 	const isHomeSelected = pathname === '/(auth)/home';
 
@@ -24,25 +30,83 @@ const Page = () => {
 		const waterLevelRef = ref(db, 'test/water_level');
 		const thresholdsRef = ref(db, 'thresholds');
 		const lastWaterChangeRef = ref(db, 'last_water_change');
+		const statusRef = ref(db, 'test/status');
+		
+		// Set initial states to offline
+		setIsPhSensorConnected(false);
+		setIsWaterSensorConnected(false);
 		
 		const unsubscribePh = onValue(pHRef, snapshot => {
 			const data = snapshot.val();
 			if (data !== null) {
 				setPH(data);
+				setLastPhUpdate(new Date());
+				// Update previous values array
+				setPreviousPhValues(prev => {
+					const newValues = [...prev, data];
+					// Keep only last 10 values
+					if (newValues.length > 10) {
+						newValues.shift();
+					}
+
+					// If this is the first time we reach 10 values, set test/status to 0
+					if (prev.length < 10 && newValues.length === 10) {
+						console.log('First 10 pH values read. Setting test/status to 0.');
+						const db = getDatabase(app);
+						const statusRef = ref(db, 'test/status');
+						set(statusRef, 0)
+							.then(() => console.log('test/status set to 0'))
+							.catch((err) => console.error('Failed to set test/status:', err));
+					}
+
+					return newValues;
+				});
 				// Check if pH is out of range and update last water change
 				if (data < minPh || data > maxPh) {
 					const currentTime = new Date();
 					setLastWaterChange(currentTime);
 					set(lastWaterChangeRef, currentTime.toISOString());
 				}
+			} else {
+				// REMOVED: variation-based connection status logic
 			}
+		}, (error) => {
+			console.error('Error reading pH data:', error);
+			// REMOVED: variation-based connection status logic
 		});
 
 		const unsubscribeWaterLevel = onValue(waterLevelRef, snapshot => {
 			const data = snapshot.val();
 			if (data !== null) {
 				setWaterLevel(data);
+				setLastWaterUpdate(new Date());
+				// Update previous values array
+				setPreviousWaterValues(prev => {
+					const newValues = [...prev, data];
+					// Keep only last 5 values
+					if (newValues.length > 5) {
+						newValues.shift();
+					}
+					return newValues;
+				});
+				// REMOVED: variation-based connection status logic
+			} else {
+				// REMOVED: variation-based connection status logic
 			}
+		}, (error) => {
+			console.error('Error reading water level data:', error);
+			// REMOVED: variation-based connection status logic
+		});
+
+		const unsubscribeStatus = onValue(statusRef, snapshot => {
+			const data = snapshot.val();
+			const isConnected = data === 1;
+			setIsPhSensorConnected(isConnected);
+			setIsWaterSensorConnected(isConnected);
+		}, (error) => {
+			console.error('Error reading status data:', error);
+			setIsPhSensorConnected(false);
+			setIsWaterSensorConnected(false);
 		});
 
 		const unsubscribeThresholds = onValue(thresholdsRef, snapshot => {
@@ -66,8 +130,9 @@ const Page = () => {
 			unsubscribeWaterLevel();
 			unsubscribeThresholds();
 			unsubscribeLastWaterChange();
+			unsubscribeStatus();
 		};
-	}, [minPh, maxPh]);
+	}, []);
 
 	const getPhStatus = () => {
 		if (pH < minPh) {
@@ -100,6 +165,14 @@ const Page = () => {
 		return `${diffInHours} Hours Ago`;
 	};
 
+	const handleRefreshData = () => {
+		const db = getDatabase(app);
+		const statusRef = ref(db, 'test/status');
+		set(statusRef, 0)
+			.then(() => console.log('test/status set to 0 by refresh'))
+			.catch((err) => console.error('Failed to set test/status on refresh:', err));
+	};
+
 	return (
 		<View style={styles.container}>
 			{/* Video Section */}
@@ -128,6 +201,16 @@ const Page = () => {
 								<Text style={[styles.statusNote, (getPhStatus() === 'Acidic' || getPhStatus() === 'Alkaline') ? styles.criticalText : null]}>
 									({getPhStatus()})
 								</Text>
+								<View style={[styles.sensorStatus, !isPhSensorConnected && styles.sensorOffline]}>
+									<Ionicons 
+										name={isPhSensorConnected ? "cloud-done" : "cloud-offline"} 
+										size={16} 
+										color={isPhSensorConnected ? "#4CAF50" : "#FF6B6B"} 
+									/>
+									<Text style={[styles.sensorStatusText, !isPhSensorConnected && styles.sensorOfflineText]}>
+										{isPhSensorConnected ? "Connected" : "Disconnected"}
+									</Text>
+								</View>
 							</View>
 						</View>
 						<View style={styles.statusItem}>
@@ -145,6 +228,16 @@ const Page = () => {
 								<Text style={[styles.statusNote, getWaterLevelStatus() === 'Critical' ? styles.criticalText : null]}>
 									({getWaterLevelStatus()})
 								</Text>
+								<View style={[styles.sensorStatus, !isWaterSensorConnected && styles.sensorOffline]}>
+									<Ionicons 
+										name={isWaterSensorConnected ? "cloud-done" : "cloud-offline"} 
+										size={16} 
+										color={isWaterSensorConnected ? "#4CAF50" : "#FF6B6B"} 
+									/>
+									<Text style={[styles.sensorStatusText, !isWaterSensorConnected && styles.sensorOfflineText]}>
+										{isWaterSensorConnected ? "Connected" : "Disconnected"}
+									</Text>
+								</View>
 							</View>
 						</View>
 						<View style={styles.lastUpdate}>
@@ -170,13 +263,7 @@ const Page = () => {
 								<Text style={styles.actionText}>View Logs</Text>
 							</TouchableOpacity>
 						</Link>
-						<Link href="/(auth)/push-test" asChild>
-							<TouchableOpacity style={styles.actionButton}>
-								<Ionicons name="push-outline" size={24} color="#4A90E2" />
-								<Text style={styles.actionText}>Test Push</Text>
-							</TouchableOpacity>
-						</Link>
-						<TouchableOpacity style={styles.actionButton}>
+						<TouchableOpacity style={styles.actionButton} onPress={handleRefreshData}>
 							<Ionicons name="refresh-outline" size={24} color="#4A90E2" />
 							<Text style={styles.actionText}>Refresh Data</Text>
 						</TouchableOpacity>
@@ -330,6 +417,51 @@ const styles = StyleSheet.create({
 	criticalText: {
 		color: '#FF6B6B',
 		fontWeight: 'bold',
+	},
+	connectionStatus: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		backgroundColor: '#FFFFFF',
+		borderRadius: 8,
+		padding: 12,
+		marginBottom: 16,
+		shadowColor: '#000',
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 3,
+		gap: 8,
+	},
+	connectionText: {
+		fontSize: 16,
+		fontWeight: 'bold',
+		color: '#333',
+	},
+	offlineStatus: {
+		backgroundColor: '#FFF5F5',
+		borderColor: '#FF6B6B',
+		borderWidth: 1,
+	},
+	offlineText: {
+		color: '#FF6B6B',
+	},
+	sensorStatus: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 4,
+		marginTop: 4,
+	},
+	sensorStatusText: {
+		fontSize: 12,
+		color: '#4CAF50',
+	},
+	sensorOffline: {
+		backgroundColor: '#FFF5F5',
+		padding: 4,
+		borderRadius: 4,
+	},
+	sensorOfflineText: {
+		color: '#FF6B6B',
 	},
 });
 
