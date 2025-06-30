@@ -5,6 +5,7 @@ import auth from '@react-native-firebase/auth';
 import { useRouter, Link } from 'expo-router';
 import { getDatabase, ref, set, onValue } from "firebase/database";
 import { app } from "../firebase";
+import NotificationService from '../services/NotificationService';
 
 const Settings = () => {
 	const router = useRouter();
@@ -88,6 +89,24 @@ const Settings = () => {
 			Alert.alert(
 				"Error",
 				"Failed to save settings. Please try again.",
+				[{ text: "OK" }]
+			);
+		}
+	};
+
+	const handleTestNotification = async () => {
+		try {
+			const notificationService = NotificationService.getInstance();
+			await notificationService.sendTestNotification();
+			Alert.alert(
+				"Test Notification",
+				"Test notification sent! Check if you received it.",
+				[{ text: "OK" }]
+			);
+		} catch (error) {
+			Alert.alert(
+				"Error",
+				"Failed to send test notification. Please check your notification permissions.",
 				[{ text: "OK" }]
 			);
 		}
@@ -179,6 +198,13 @@ const Settings = () => {
 							/>
 						</View>
 					)}
+					<TouchableOpacity 
+						style={[styles.button, styles.testButton]}
+						onPress={handleTestNotification}
+					>
+						<Ionicons name="notifications-outline" size={20} color="#fff" />
+						<Text style={styles.buttonText}>Test Push Notification</Text>
+					</TouchableOpacity>
 				</View>
 
 				<View style={styles.actionButtons}>
@@ -388,6 +414,12 @@ const styles = StyleSheet.create({
 		color: '#4A90E2',
 		fontSize: 12,
 		marginTop: 4,
+	},
+	testButton: {
+		backgroundColor: '#4A90E2',
+		flexDirection: 'row',
+		gap: 8,
+		marginTop: 12,
 	},
 });
 
