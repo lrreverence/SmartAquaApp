@@ -22,7 +22,6 @@ const Page = () => {
 	const [lastWaterUpdate, setLastWaterUpdate] = useState<Date | null>(null);
 	const [previousPhValues, setPreviousPhValues] = useState<number[]>([]);
 	const [previousWaterValues, setPreviousWaterValues] = useState<number[]>([]);
-	const [lastClientNotificationTime, setLastClientNotificationTime] = useState(0);
 	const pathname = usePathname();
 	const isHomeSelected = pathname === '/(auth)/home';
 
@@ -87,6 +86,10 @@ const Page = () => {
 			if (data !== null) {
 				setWaterLevel(data);
 				setLastWaterUpdate(new Date());
+				
+				// Check water level and send notification if needed
+				checkWaterLevelAndNotify(data);
+				
 				// Update previous values array
 				setPreviousWaterValues(prev => {
 					const newValues = [...prev, data];
@@ -180,21 +183,13 @@ const Page = () => {
 			.catch((err) => console.error('Failed to set test/status on refresh:', err));
 	};
 
-	// Client-side pH monitoring with 3-minute cooldown
+	// Client-side pH monitoring without cooldown
 	const checkPhLevelAndNotify = async (phValue: number, minPhValue: number, maxPhValue: number) => {
-		const currentTime = Date.now();
-		const COOLDOWN_DURATION = 3 * 60 * 1000; // 3 minutes in milliseconds
-		const timeSinceLastNotification = currentTime - lastClientNotificationTime;
-		
 		// Check if pH is outside the normal range
 		const isAbnormal = phValue < minPhValue || phValue > maxPhValue;
 		
-		if (isAbnormal && timeSinceLastNotification >= COOLDOWN_DURATION) {
+		if (isAbnormal) {
 			console.log(`🔔 Client-side: pH level ${phValue} is outside normal range (${minPhValue}-${maxPhValue})`);
-			console.log(`⏰ Time since last notification: ${timeSinceLastNotification}ms`);
-			
-			// Update last notification time
-			setLastClientNotificationTime(currentTime);
 			
 			try {
 				let title = "⚠️ pH Level Alert";
@@ -202,16 +197,16 @@ const Page = () => {
 				
 				if (phValue < minPhValue) {
 					title = "🔵 pH Level Too Low";
-					body = `pH level is too low (${phValue.toFixed(1)}). Normal range: ${minPhValue}-${maxPhValue}. Consider changing water.`;
+					body = `pH level is too low (${phValue.toFixed(1)}). Normal range: ${minPhValue}-${maxPhValue}. Changing water.`;
 				} else if (phValue > maxPhValue) {
 					title = "🔴 pH Level Too High";
-					body = `pH level is too high (${phValue.toFixed(1)}). Normal range: ${minPhValue}-${maxPhValue}. Consider changing water.`;
+					body = `pH level is too high (${phValue.toFixed(1)}). Normal range: ${minPhValue}-${maxPhValue}. Changing water.`;
 				} else {
 					title = "⚠️ pH Level Alert";
-					body = `pH level is abnormal (${phValue.toFixed(1)}). Normal range: ${minPhValue}-${maxPhValue}. Consider changing water.`;
+					body = `pH level is abnormal (${phValue.toFixed(1)}). Normal range: ${minPhValue}-${maxPhValue}. Changing water.`;
 				}
 				
-				// Send local notification
+				// Send local notification with sound
 				await Notifications.scheduleNotificationAsync({
 					content: {
 						title,
@@ -220,7 +215,7 @@ const Page = () => {
 							phValue: phValue.toString(),
 							minPh: minPhValue.toString(),
 							maxPh: maxPhValue.toString(),
-							timestamp: currentTime.toString(),
+							timestamp: Date.now().toString(),
 							type: "ph_alert",
 							alertType: phValue < minPhValue ? "low" : phValue > maxPhValue ? "high" : "abnormal"
 						},
@@ -234,9 +229,62 @@ const Page = () => {
 			} catch (error) {
 				console.error('❌ Error sending client-side notification:', error);
 			}
-		} else if (isAbnormal) {
-			const timeRemaining = COOLDOWN_DURATION - timeSinceLastNotification;
-			console.log(`⏳ Client-side: pH level ${phValue} is abnormal but cooldown active. Time remaining: ${timeRemaining}ms`);
+		}
+	};
+
+	// Client-side water level monitoring
+	const checkWaterLevelAndNotify = async (waterLevelValue: number) => {
+		// Determine water level status
+		let waterStatus = "Stable";
+		let isUnstable = false;
+		
+		if (waterLevelValue < 20) {
+			waterStatus = "Critical";
+			isUnstable = true;
+		} else if (waterLevelValue < 70) {
+			waterStatus = "Low";
+			isUnstable = true;
+		}
+		
+		if (isUnstable) {
+			console.log(`💧 Client-side: Water level ${waterLevelValue}% is ${waterStatus}`);
+			
+			try {
+				let title = "💧 Water Level Alert";
+				let body = "";
+				
+				if (waterStatus === "Critical") {
+					title = "🚨 Critical Water Level";
+					body = `Water level is critically low (${waterLevelValue}%). Immediate action required!`;
+				} else if (waterStatus === "Low") {
+					title = "⚠️ Low Water Level";
+					body = `Water level is low (${waterLevelValue}%). Consider adding water soon.`;
+				} else {
+					title = "💧 Water Level Update";
+					body = `Water level is ${waterStatus.toLowerCase()} (${waterLevelValue}%).`;
+				}
+				
+				// Send local notification with sound
+				await Notifications.scheduleNotificationAsync({
+					content: {
+						title,
+						body,
+						data: {
+							waterLevel: waterLevelValue.toString(),
+							status: waterStatus,
+							timestamp: Date.now().toString(),
+							type: "water_level_alert"
+						},
+						sound: 'default',
+						priority: Notifications.AndroidNotificationPriority.HIGH,
+					},
+					trigger: null, // Immediate notification
+				});
+				
+				console.log(`✅ Client-side water level notification sent: ${title}`);
+			} catch (error) {
+				console.error('❌ Error sending client-side water level notification:', error);
+			}
 		}
 	};
 

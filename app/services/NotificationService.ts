@@ -160,15 +160,30 @@ class NotificationService {
   // Create notification channel for Android
   public async createNotificationChannel(): Promise<void> {
     if (Platform.OS === 'android') {
+      // pH alerts channel
       await Notifications.setNotificationChannelAsync('ph_alerts', {
         name: 'pH Level Alerts',
         description: 'Notifications for abnormal pH levels',
-        importance: Notifications.AndroidImportance.HIGH,
+        importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#FF231F7C',
         sound: 'default',
         enableVibrate: true,
         showBadge: true,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      });
+
+      // Water level alerts channel
+      await Notifications.setNotificationChannelAsync('water_level_alerts', {
+        name: 'Water Level Alerts',
+        description: 'Notifications for water level changes',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#4A90E2',
+        sound: 'default',
+        enableVibrate: true,
+        showBadge: true,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       });
     }
   }

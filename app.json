@@ -16,7 +16,15 @@
       "package": "com.galaxies.firebase",
       "googleServicesFile": "./google-services.json",
       "jsEngine": "hermes",
-      "newArchEnabled": true
+      "newArchEnabled": true,
+      "permissions": [
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.INTERNET"
+      ],
+      "allowBackup": true,
+      "foregroundServiceType": ["dataSync", "location"]
     },
     "web": {
       "bundler": "metro",

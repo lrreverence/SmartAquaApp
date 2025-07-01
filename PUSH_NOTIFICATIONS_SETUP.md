@@ -192,7 +192,7 @@ Edit the notification message in `functions/src/index.ts`:
 ```typescript
 notification: {
   title: '⚠️ pH Level Alert',
-  body: `pH level is abnormal (${phValue.toFixed(1)}). Normal range: ${minPh}-${maxPh}. Consider changing water.`,
+  body: `pH level is abnormal (${phValue.toFixed(1)}). Normal range: ${minPh}-${maxPh}. Changing water.`,
 }
 ```
 

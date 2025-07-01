@@ -14,7 +14,8 @@ import * as admin from "firebase-admin";
 admin.initializeApp();
 
 // Store the last notification time to avoid spam
-let lastNotificationTime = 0;
+let lastPhNotificationTime = 0;
+let lastWaterLevelNotificationTime = 0;
 const COOLDOWN_DURATION = 3 * 60 * 1000; // 3 minutes in milliseconds
 
 export const monitorPhLevels = functions.database
@@ -43,17 +44,18 @@ export const monitorPhLevels = functions.database
       
       // Check if pH is outside the normal range
       const isAbnormal = newPhValue < minPh || newPhValue > maxPh;
+      const wasAbnormal = previousPhValue !== null && (previousPhValue < minPh || previousPhValue > maxPh);
       
       // Check cooldown period
       const currentTime = Date.now();
-      const timeSinceLastNotification = currentTime - lastNotificationTime;
+      const timeSinceLastNotification = currentTime - lastPhNotificationTime;
       
-      if (isAbnormal && timeSinceLastNotification >= COOLDOWN_DURATION) {
+      if (isAbnormal && !wasAbnormal && timeSinceLastNotification >= COOLDOWN_DURATION) {
         console.log(`pH level ${newPhValue} is outside normal range (${minPh}-${maxPh})`);
         console.log(`Time since last notification: ${timeSinceLastNotification}ms`);
         
         // Update last notification time
-        lastNotificationTime = currentTime;
+        lastPhNotificationTime = currentTime;
         
         // Get all user FCM tokens
         const tokensSnapshot = await admin.database().ref("/user_tokens").once("value");
@@ -62,15 +64,35 @@ export const monitorPhLevels = functions.database
         if (tokens) {
           const tokenList = Object.values(tokens) as string[];
           
-          // Send push notification to all users
-          const notificationPromises = tokenList.map(token => 
-            sendPushNotification(token, newPhValue, minPh, maxPh)
+          // Send immediate pH alert notification
+          const immediatePromises = tokenList.map(token => 
+            sendPhAlertNotification(token, newPhValue, minPh, maxPh)
           );
           
-          await Promise.all(notificationPromises);
-          console.log(`Sent push notifications to ${tokenList.length} users`);
+          await Promise.all(immediatePromises);
+          console.log(`Sent immediate pH alert notifications to ${tokenList.length} users`);
+          
+          // Send "Changing water" notification after 3 seconds
+          setTimeout(async () => {
+            const changingWaterPromises = tokenList.map(token => 
+              sendChangingWaterNotification(token, newPhValue)
+            );
+            
+            await Promise.all(changingWaterPromises);
+            console.log(`Sent "Changing water" notifications to ${tokenList.length} users`);
+          }, 3000);
+          
+          // Send "Water change done" notification after 1 minute
+          setTimeout(async () => {
+            const waterChangeDonePromises = tokenList.map(token => 
+              sendWaterChangeDoneNotification(token)
+            );
+            
+            await Promise.all(waterChangeDonePromises);
+            console.log(`Sent "Water change done" notifications to ${tokenList.length} users`);
+          }, 60000);
         }
-      } else if (isAbnormal) {
+      } else if (isAbnormal && !wasAbnormal) {
         const timeRemaining = COOLDOWN_DURATION - timeSinceLastNotification;
         console.log(`pH level ${newPhValue} is abnormal but cooldown active. Time remaining: ${timeRemaining}ms`);
       }
@@ -82,7 +104,73 @@ export const monitorPhLevels = functions.database
     }
   });
 
-async function sendPushNotification(
+// Monitor water level changes
+export const monitorWaterLevel = functions.database
+  .ref("/test/water_level")
+  .onWrite(async (change) => {
+    const newWaterLevel = change.after.val();
+    const previousWaterLevel = change.before.val();
+    
+    // Skip if no new value or if value hasn't changed
+    if (newWaterLevel === null || newWaterLevel === previousWaterLevel) {
+      return null;
+    }
+
+    try {
+      // Check cooldown period
+      const currentTime = Date.now();
+      const timeSinceLastNotification = currentTime - lastWaterLevelNotificationTime;
+      
+      // Determine water level status
+      let waterStatus = "Stable";
+      let isUnstable = false;
+      
+      if (newWaterLevel < 20) {
+        waterStatus = "Critical";
+        isUnstable = true;
+      } else if (newWaterLevel < 70) {
+        waterStatus = "Low";
+        isUnstable = true;
+      }
+      
+      if (isUnstable && timeSinceLastNotification >= COOLDOWN_DURATION) {
+        console.log(`Water level ${newWaterLevel}% is ${waterStatus}`);
+        console.log(`Time since last notification: ${timeSinceLastNotification}ms`);
+        
+        // Update last notification time
+        lastWaterLevelNotificationTime = currentTime;
+        
+        // Get all user FCM tokens
+        const tokensSnapshot = await admin.database().ref("/user_tokens").once("value");
+        const tokens = tokensSnapshot.val();
+        
+        if (tokens) {
+          const tokenList = Object.values(tokens) as string[];
+          
+          // Send water level notification
+          const notificationPromises = tokenList.map(token => 
+            sendWaterLevelNotification(token, newWaterLevel, waterStatus)
+          );
+          
+          await Promise.all(notificationPromises);
+          console.log(`Sent water level notifications to ${tokenList.length} users`);
+        }
+      } else if (isUnstable) {
+        const timeRemaining = COOLDOWN_DURATION - timeSinceLastNotification;
+        console.log(
+          `Water level ${newWaterLevel}% is unstable but cooldown active. ` +
+          `Time remaining: ${timeRemaining}ms`
+        );
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error monitoring water level:", error);
+      return null;
+    }
+  });
+
+async function sendPhAlertNotification(
   token: string, 
   phValue: number, 
   minPh: number, 
@@ -98,13 +186,16 @@ async function sendPushNotification(
     
     if (isTooHigh) {
       title = "🔴 pH Level Too High";
-      body = `pH level is too high (${phValue.toFixed(1)}). Normal range: ${minPh}-${maxPh}. Consider changing water.`;
+      body = `pH level is too high (${phValue.toFixed(1)}). ` +
+             `Normal range: ${minPh}-${maxPh}. Changing water.`;
     } else if (isTooLow) {
       title = "🔵 pH Level Too Low";
-      body = `pH level is too low (${phValue.toFixed(1)}). Normal range: ${minPh}-${maxPh}. Consider changing water.`;
+      body = `pH level is too low (${phValue.toFixed(1)}). ` +
+             `Normal range: ${minPh}-${maxPh}. Changing water.`;
     } else {
       title = "⚠️ pH Level Alert";
-      body = `pH level is abnormal (${phValue.toFixed(1)}). Normal range: ${minPh}-${maxPh}. Consider changing water.`;
+      body = `pH level is abnormal (${phValue.toFixed(1)}). ` +
+             `Normal range: ${minPh}-${maxPh}. Changing water.`;
     }
 
     const message = {
@@ -119,7 +210,7 @@ async function sendPushNotification(
         maxPh: maxPh.toString(),
         timestamp: Date.now().toString(),
         type: "ph_alert",
-        alertType: isTooHigh ? "high" : isTooLow ? "low" : "abnormal"
+        phStatus: isTooHigh ? "high" : isTooLow ? "low" : "abnormal"
       },
       android: {
         priority: "high" as const,
@@ -128,14 +219,195 @@ async function sendPushNotification(
           priority: "high" as const,
           defaultSound: true,
           defaultVibrateTimings: true,
+          sound: "default",
+          icon: "notification_icon",
+          visibility: "public" as const,
+          importance: "high" as const,
+        },
+        data: {
+          priority: "high",
+          wake_lock_timeout: "30000",
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+            badge: 1,
+          },
         },
       },
     };
 
     const response = await admin.messaging().send(message);
-    console.log("Successfully sent message:", response);
+    console.log("Successfully sent pH alert message:", response);
   } catch (error) {
-    console.error("Error sending push notification:", error);
+    console.error("Error sending pH alert notification:", error);
+  }
+}
+
+async function sendChangingWaterNotification(
+  token: string, 
+  phValue: number
+): Promise<void> {
+  try {
+    const message = {
+      token,
+      notification: {
+        title: "💧 Changing Water",
+        body: `Starting water change process for pH level ${phValue.toFixed(1)}. Please wait...`,
+      },
+      data: {
+        phValue: phValue.toString(),
+        timestamp: Date.now().toString(),
+        type: "changing_water"
+      },
+      android: {
+        priority: "high" as const,
+        notification: {
+          channelId: "ph_alerts",
+          priority: "high" as const,
+          defaultSound: true,
+          defaultVibrateTimings: true,
+          sound: "default",
+          icon: "notification_icon",
+          visibility: "public" as const,
+          importance: "high" as const,
+        },
+        data: {
+          priority: "high",
+          wake_lock_timeout: "30000",
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+            badge: 1,
+          },
+        },
+      },
+    };
+
+    const response = await admin.messaging().send(message);
+    console.log("Successfully sent changing water message:", response);
+  } catch (error) {
+    console.error("Error sending changing water notification:", error);
+  }
+}
+
+async function sendWaterChangeDoneNotification(
+  token: string
+): Promise<void> {
+  try {
+    const message = {
+      token,
+      notification: {
+        title: "✅ Water Change Complete",
+        body: "Water change completed. pH level should stabilize soon. Monitor the levels.",
+      },
+      data: {
+        timestamp: Date.now().toString(),
+        type: "water_change_done"
+      },
+      android: {
+        priority: "high" as const,
+        notification: {
+          channelId: "ph_alerts",
+          priority: "high" as const,
+          defaultSound: true,
+          defaultVibrateTimings: true,
+          sound: "default",
+          icon: "notification_icon",
+          visibility: "public" as const,
+          importance: "high" as const,
+        },
+        data: {
+          priority: "high",
+          wake_lock_timeout: "30000",
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+            badge: 1,
+          },
+        },
+      },
+    };
+
+    const response = await admin.messaging().send(message);
+    console.log("Successfully sent water change done message:", response);
+  } catch (error) {
+    console.error("Error sending water change done notification:", error);
+  }
+}
+
+async function sendWaterLevelNotification(
+  token: string, 
+  waterLevel: number, 
+  status: string
+): Promise<void> {
+  try {
+    let title = "💧 Water Level Alert";
+    let body = "";
+    
+    if (status === "Critical") {
+      title = "🚨 Critical Water Level";
+      body = `Water level is critically low (${waterLevel}%). ` +
+             "Immediate action required!";
+    } else if (status === "Low") {
+      title = "⚠️ Low Water Level";
+      body = `Water level is low (${waterLevel}%). Consider adding water soon.`;
+    } else {
+      title = "💧 Water Level Update";
+      body = `Water level is ${status.toLowerCase()} (${waterLevel}%).`;
+    }
+
+    const message = {
+      token,
+      notification: {
+        title,
+        body,
+      },
+      data: {
+        waterLevel: waterLevel.toString(),
+        status: status,
+        timestamp: Date.now().toString(),
+        type: "water_level_alert"
+      },
+      android: {
+        priority: "high" as const,
+        notification: {
+          channelId: "water_level_alerts",
+          priority: "high" as const,
+          defaultSound: true,
+          defaultVibrateTimings: true,
+          sound: "default",
+          icon: "notification_icon",
+          visibility: "public" as const,
+          importance: "high" as const,
+        },
+        data: {
+          priority: "high",
+          wake_lock_timeout: "30000",
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: "default",
+            badge: 1,
+          },
+        },
+      },
+    };
+
+    const response = await admin.messaging().send(message);
+    console.log("Successfully sent water level message:", response);
+  } catch (error) {
+    console.error("Error sending water level notification:", error);
   }
 }
 
