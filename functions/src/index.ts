@@ -14,6 +14,8 @@ import * as admin from "firebase-admin";
 admin.initializeApp();
 
 // Store the last notification time to avoid spam
+let lastNotificationTime = 0;
+const COOLDOWN_DURATION = 3 * 60 * 1000; // 3 minutes in milliseconds
 
 export const monitorPhLevels = functions.database
   .ref("/test/ph")
@@ -41,11 +43,17 @@ export const monitorPhLevels = functions.database
       
       // Check if pH is outside the normal range
       const isAbnormal = newPhValue < minPh || newPhValue > maxPh;
-      const wasAbnormal = previousPhValue !== null && (previousPhValue < minPh || previousPhValue > maxPh);
       
-      // Only send notification if pH just became abnormal (not if it was already abnormal)
-      if (isAbnormal && !wasAbnormal) {
+      // Check cooldown period
+      const currentTime = Date.now();
+      const timeSinceLastNotification = currentTime - lastNotificationTime;
+      
+      if (isAbnormal && timeSinceLastNotification >= COOLDOWN_DURATION) {
         console.log(`pH level ${newPhValue} is outside normal range (${minPh}-${maxPh})`);
+        console.log(`Time since last notification: ${timeSinceLastNotification}ms`);
+        
+        // Update last notification time
+        lastNotificationTime = currentTime;
         
         // Get all user FCM tokens
         const tokensSnapshot = await admin.database().ref("/user_tokens").once("value");
@@ -62,6 +70,9 @@ export const monitorPhLevels = functions.database
           await Promise.all(notificationPromises);
           console.log(`Sent push notifications to ${tokenList.length} users`);
         }
+      } else if (isAbnormal) {
+        const timeRemaining = COOLDOWN_DURATION - timeSinceLastNotification;
+        console.log(`pH level ${newPhValue} is abnormal but cooldown active. Time remaining: ${timeRemaining}ms`);
       }
       
       return null;
@@ -78,19 +89,37 @@ async function sendPushNotification(
   maxPh: number
 ): Promise<void> {
   try {
+    // Determine if pH is too high or too low
+    const isTooHigh = phValue > maxPh;
+    const isTooLow = phValue < minPh;
+    
+    let title = "⚠️ pH Level Alert";
+    let body = "";
+    
+    if (isTooHigh) {
+      title = "🔴 pH Level Too High";
+      body = `pH level is too high (${phValue.toFixed(1)}). Normal range: ${minPh}-${maxPh}. Consider changing water.`;
+    } else if (isTooLow) {
+      title = "🔵 pH Level Too Low";
+      body = `pH level is too low (${phValue.toFixed(1)}). Normal range: ${minPh}-${maxPh}. Consider changing water.`;
+    } else {
+      title = "⚠️ pH Level Alert";
+      body = `pH level is abnormal (${phValue.toFixed(1)}). Normal range: ${minPh}-${maxPh}. Consider changing water.`;
+    }
+
     const message = {
       token,
       notification: {
-        title: "⚠️ pH Level Alert",
-        body: `pH level is abnormal (${phValue.toFixed(1)}). ` +
-              `Normal range: ${minPh}-${maxPh}. Consider changing water.`,
+        title,
+        body,
       },
       data: {
         phValue: phValue.toString(),
         minPh: minPh.toString(),
         maxPh: maxPh.toString(),
         timestamp: Date.now().toString(),
-        type: "ph_alert"
+        type: "ph_alert",
+        alertType: isTooHigh ? "high" : isTooLow ? "low" : "abnormal"
       },
       android: {
         priority: "high" as const,

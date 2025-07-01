@@ -5,6 +5,8 @@ import { Video } from 'expo-av';
 import { useRef, useState, useEffect } from 'react';
 import { getDatabase, ref, onValue, set, onDisconnect } from "firebase/database";
 import { app } from "../firebase";
+import NotificationService from '../services/NotificationService';
+import * as Notifications from 'expo-notifications';
 
 
 const Page = () => {
@@ -20,6 +22,7 @@ const Page = () => {
 	const [lastWaterUpdate, setLastWaterUpdate] = useState<Date | null>(null);
 	const [previousPhValues, setPreviousPhValues] = useState<number[]>([]);
 	const [previousWaterValues, setPreviousWaterValues] = useState<number[]>([]);
+	const [lastClientNotificationTime, setLastClientNotificationTime] = useState(0);
 	const pathname = usePathname();
 	const isHomeSelected = pathname === '/(auth)/home';
 
@@ -41,6 +44,10 @@ const Page = () => {
 			if (data !== null) {
 				setPH(data);
 				setLastPhUpdate(new Date());
+				
+				// Check pH level and send notification if needed
+				checkPhLevelAndNotify(data, minPh, maxPh);
+				
 				// Update previous values array
 				setPreviousPhValues(prev => {
 					const newValues = [...prev, data];
@@ -171,6 +178,66 @@ const Page = () => {
 		set(statusRef, 0)
 			.then(() => console.log('test/status set to 0 by refresh'))
 			.catch((err) => console.error('Failed to set test/status on refresh:', err));
+	};
+
+	// Client-side pH monitoring with 3-minute cooldown
+	const checkPhLevelAndNotify = async (phValue: number, minPhValue: number, maxPhValue: number) => {
+		const currentTime = Date.now();
+		const COOLDOWN_DURATION = 3 * 60 * 1000; // 3 minutes in milliseconds
+		const timeSinceLastNotification = currentTime - lastClientNotificationTime;
+		
+		// Check if pH is outside the normal range
+		const isAbnormal = phValue < minPhValue || phValue > maxPhValue;
+		
+		if (isAbnormal && timeSinceLastNotification >= COOLDOWN_DURATION) {
+			console.log(`🔔 Client-side: pH level ${phValue} is outside normal range (${minPhValue}-${maxPhValue})`);
+			console.log(`⏰ Time since last notification: ${timeSinceLastNotification}ms`);
+			
+			// Update last notification time
+			setLastClientNotificationTime(currentTime);
+			
+			try {
+				let title = "⚠️ pH Level Alert";
+				let body = "";
+				
+				if (phValue < minPhValue) {
+					title = "🔵 pH Level Too Low";
+					body = `pH level is too low (${phValue.toFixed(1)}). Normal range: ${minPhValue}-${maxPhValue}. Consider changing water.`;
+				} else if (phValue > maxPhValue) {
+					title = "🔴 pH Level Too High";
+					body = `pH level is too high (${phValue.toFixed(1)}). Normal range: ${minPhValue}-${maxPhValue}. Consider changing water.`;
+				} else {
+					title = "⚠️ pH Level Alert";
+					body = `pH level is abnormal (${phValue.toFixed(1)}). Normal range: ${minPhValue}-${maxPhValue}. Consider changing water.`;
+				}
+				
+				// Send local notification
+				await Notifications.scheduleNotificationAsync({
+					content: {
+						title,
+						body,
+						data: {
+							phValue: phValue.toString(),
+							minPh: minPhValue.toString(),
+							maxPh: maxPhValue.toString(),
+							timestamp: currentTime.toString(),
+							type: "ph_alert",
+							alertType: phValue < minPhValue ? "low" : phValue > maxPhValue ? "high" : "abnormal"
+						},
+						sound: 'default',
+						priority: Notifications.AndroidNotificationPriority.HIGH,
+					},
+					trigger: null, // Immediate notification
+				});
+				
+				console.log(`✅ Client-side notification sent: ${title}`);
+			} catch (error) {
+				console.error('❌ Error sending client-side notification:', error);
+			}
+		} else if (isAbnormal) {
+			const timeRemaining = COOLDOWN_DURATION - timeSinceLastNotification;
+			console.log(`⏳ Client-side: pH level ${phValue} is abnormal but cooldown active. Time remaining: ${timeRemaining}ms`);
+		}
 	};
 
 	return (
