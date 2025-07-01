@@ -11,6 +11,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -137,12 +139,14 @@ class NotificationService {
   private setupNotificationListeners(): void {
     // Listen for incoming notifications
     this.notificationListener = Notifications.addNotificationReceivedListener(notification => {
-      console.log('Notification received:', notification);
+      console.log('🔔 Notification received in app:', notification);
+      console.log('📱 Platform:', Platform.OS);
+      console.log('📱 Device:', Device.isDevice ? 'Physical Device' : 'Simulator');
     });
 
     // Listen for notification responses (when user taps notification)
     this.responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Notification response:', response);
+      console.log('👆 Notification tapped:', response);
       
       // Handle notification tap - you can navigate to specific screens here
       const data = response.notification.request.content.data;
@@ -193,25 +197,29 @@ class NotificationService {
         await this.createNotificationChannel();
       }
 
-      // Try sending an immediate notification first
+      // Send an immediate notification with proper configuration
       console.log('Sending immediate notification...');
       const immediateId = await Notifications.scheduleNotificationAsync({
         content: {
-          title: 'Immediate Test Notification',
-          body: 'This is an immediate test notification',
+          title: '🔔 SmartAqua Test',
+          body: 'This is a test notification from SmartAqua app',
           data: { type: 'test_immediate' },
+          sound: 'default',
+          priority: Notifications.AndroidNotificationPriority.HIGH,
         },
         trigger: null, // null trigger means immediate
       });
       console.log('Immediate notification scheduled with ID:', immediateId);
 
-      // Also schedule a delayed notification
+      // Also schedule a delayed notification for testing
       console.log('Scheduling delayed notification...');
       const delayedId = await Notifications.scheduleNotificationAsync({
         content: {
-          title: 'Delayed Test Notification',
-          body: 'This is a delayed test notification for pH monitoring',
+          title: '⏰ Delayed Test',
+          body: 'This is a delayed test notification (3 seconds)',
           data: { type: 'test_delayed' },
+          sound: 'default',
+          priority: Notifications.AndroidNotificationPriority.HIGH,
         },
         trigger: { 
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
