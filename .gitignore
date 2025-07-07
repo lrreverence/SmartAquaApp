@@ -40,3 +40,5 @@ app-example
 # Firebase
 service-account.json
 smart-aqua-app-firebase-adminsdk-fbsvc-9bdddba411.json
+smart-aqua-app-firebase-adminsdk-fbsvc-efad7b1264.json
+*-firebase-adminsdk-*.json
