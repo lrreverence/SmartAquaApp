@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    
+    <!-- Fish bowl outline -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,2C8,2 5,5 5,9C5,12 7,15 10,16V18C10,19.1 10.9,20 12,20C13.1,20 14,19.1 14,18V16C17,15 19,12 19,9C19,5 16,2 12,2Z"/>
+    
+    <!-- Water level -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M7,9C7,7.9 7.9,7 9,7H15C16.1,7 17,7.9 17,9C17,10.1 16.1,11 15,11H9C7.9,11 7,10.1 7,9Z"/>
+    
+    <!-- Small fish -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M10,8C10.5,8 11,8.5 11,9C11,9.5 10.5,10 10,10C9.5,10 9,9.5 9,9C9,8.5 9.5,8 10,8Z"/>
+</vector> 

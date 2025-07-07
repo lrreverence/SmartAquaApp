@@ -138,10 +138,38 @@ class NotificationService {
   // Set up notification listeners
   private setupNotificationListeners(): void {
     // Listen for incoming notifications
-    this.notificationListener = Notifications.addNotificationReceivedListener(notification => {
+    this.notificationListener = Notifications.addNotificationReceivedListener(async notification => {
       console.log('🔔 Notification received in app:', notification);
       console.log('📱 Platform:', Platform.OS);
       console.log('📱 Device:', Device.isDevice ? 'Physical Device' : 'Simulator');
+      
+      // Handle delayed notifications for pH alerts
+      const data = notification.request.content.data;
+      if (data?.scheduleDelayed === 'true' && data?.type === 'ph_alert') {
+        console.log('📅 Scheduling delayed pH notifications...');
+        
+        // Schedule "Changing Water" notification
+        if (data.changingWaterTitle && data.changingWaterBody && data.changingWaterDelay) {
+          const changingWaterDelay = parseInt(data.changingWaterDelay as string);
+          await this.scheduleDelayedNotification(
+            data.changingWaterTitle as string,
+            data.changingWaterBody as string,
+            { type: 'changing_water', phValue: data.phValue },
+            changingWaterDelay
+          );
+        }
+        
+        // Schedule "Water Change Done" notification
+        if (data.waterChangeDoneTitle && data.waterChangeDoneBody && data.waterChangeDoneDelay) {
+          const waterChangeDoneDelay = parseInt(data.waterChangeDoneDelay as string);
+          await this.scheduleDelayedNotification(
+            data.waterChangeDoneTitle as string,
+            data.waterChangeDoneBody as string,
+            { type: 'water_change_done' },
+            waterChangeDoneDelay
+          );
+        }
+      }
     });
 
     // Listen for notification responses (when user taps notification)
@@ -155,6 +183,34 @@ class NotificationService {
         console.log('pH alert notification tapped');
       }
     });
+  }
+
+  // Schedule a delayed notification locally
+  private async scheduleDelayedNotification(
+    title: string,
+    body: string,
+    data: any,
+    delayMs: number
+  ): Promise<void> {
+    try {
+      const notificationId = await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          data,
+          sound: 'default',
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: Math.floor(delayMs / 1000), // Convert ms to seconds
+        },
+      });
+      
+      console.log(`✅ Delayed notification scheduled with ID: ${notificationId}`);
+    } catch (error) {
+      console.error('❌ Error scheduling delayed notification:', error);
+    }
   }
 
   // Create notification channel for Android

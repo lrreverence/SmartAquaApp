@@ -64,33 +64,13 @@ export const monitorPhLevels = functions.database
         if (tokens) {
           const tokenList = Object.values(tokens) as string[];
           
-          // Send immediate pH alert notification
-          const immediatePromises = tokenList.map(token => 
+          // Send immediate pH alert notification with delayed notification data
+          const notificationPromises = tokenList.map(token => 
             sendPhAlertNotification(token, newPhValue, minPh, maxPh)
           );
           
-          await Promise.all(immediatePromises);
-          console.log(`Sent immediate pH alert notifications to ${tokenList.length} users`);
-          
-          // Send "Changing water" notification after 3 seconds
-          setTimeout(async () => {
-            const changingWaterPromises = tokenList.map(token => 
-              sendChangingWaterNotification(token, newPhValue)
-            );
-            
-            await Promise.all(changingWaterPromises);
-            console.log(`Sent "Changing water" notifications to ${tokenList.length} users`);
-          }, 3000);
-          
-          // Send "Water change done" notification after 1 minute
-          setTimeout(async () => {
-            const waterChangeDonePromises = tokenList.map(token => 
-              sendWaterChangeDoneNotification(token)
-            );
-            
-            await Promise.all(waterChangeDonePromises);
-            console.log(`Sent "Water change done" notifications to ${tokenList.length} users`);
-          }, 60000);
+          await Promise.all(notificationPromises);
+          console.log(`Sent pH alert notifications to ${tokenList.length} users`);
         }
       } else if (isAbnormal && !wasAbnormal) {
         const timeRemaining = COOLDOWN_DURATION - timeSinceLastNotification;
@@ -210,7 +190,14 @@ async function sendPhAlertNotification(
         maxPh: maxPh.toString(),
         timestamp: Date.now().toString(),
         type: "ph_alert",
-        phStatus: isTooHigh ? "high" : isTooLow ? "low" : "abnormal"
+        phStatus: isTooHigh ? "high" : isTooLow ? "low" : "abnormal",
+        scheduleDelayed: "true", // Flag to indicate client should schedule delayed notifications
+        changingWaterTitle: "💧 Changing Water",
+        changingWaterBody: `Starting water change process for pH level ${phValue.toFixed(1)}. Please wait...`,
+        changingWaterDelay: "3000",
+        waterChangeDoneTitle: "✅ Water Change Complete",
+        waterChangeDoneBody: "Water change completed. pH level should stabilize soon. Monitor the levels.",
+        waterChangeDoneDelay: "60000"
       },
       android: {
         priority: "high" as const,
@@ -227,6 +214,13 @@ async function sendPhAlertNotification(
         data: {
           priority: "high",
           wake_lock_timeout: "30000",
+          scheduleDelayed: "true",
+          changingWaterTitle: "💧 Changing Water",
+          changingWaterBody: `Starting water change process for pH level ${phValue.toFixed(1)}. Please wait...`,
+          changingWaterDelay: "3000",
+          waterChangeDoneTitle: "✅ Water Change Complete",
+          waterChangeDoneBody: "Water change completed. pH level should stabilize soon. Monitor the levels.",
+          waterChangeDoneDelay: "60000"
         },
       },
       apns: {
@@ -243,104 +237,6 @@ async function sendPhAlertNotification(
     console.log("Successfully sent pH alert message:", response);
   } catch (error) {
     console.error("Error sending pH alert notification:", error);
-  }
-}
-
-async function sendChangingWaterNotification(
-  token: string, 
-  phValue: number
-): Promise<void> {
-  try {
-    const message = {
-      token,
-      notification: {
-        title: "💧 Changing Water",
-        body: `Starting water change process for pH level ${phValue.toFixed(1)}. Please wait...`,
-      },
-      data: {
-        phValue: phValue.toString(),
-        timestamp: Date.now().toString(),
-        type: "changing_water"
-      },
-      android: {
-        priority: "high" as const,
-        notification: {
-          channelId: "ph_alerts",
-          priority: "high" as const,
-          defaultSound: true,
-          defaultVibrateTimings: true,
-          sound: "default",
-          icon: "notification_icon",
-          visibility: "public" as const,
-          importance: "high" as const,
-        },
-        data: {
-          priority: "high",
-          wake_lock_timeout: "30000",
-        },
-      },
-      apns: {
-        payload: {
-          aps: {
-            sound: "default",
-            badge: 1,
-          },
-        },
-      },
-    };
-
-    const response = await admin.messaging().send(message);
-    console.log("Successfully sent changing water message:", response);
-  } catch (error) {
-    console.error("Error sending changing water notification:", error);
-  }
-}
-
-async function sendWaterChangeDoneNotification(
-  token: string
-): Promise<void> {
-  try {
-    const message = {
-      token,
-      notification: {
-        title: "✅ Water Change Complete",
-        body: "Water change completed. pH level should stabilize soon. Monitor the levels.",
-      },
-      data: {
-        timestamp: Date.now().toString(),
-        type: "water_change_done"
-      },
-      android: {
-        priority: "high" as const,
-        notification: {
-          channelId: "ph_alerts",
-          priority: "high" as const,
-          defaultSound: true,
-          defaultVibrateTimings: true,
-          sound: "default",
-          icon: "notification_icon",
-          visibility: "public" as const,
-          importance: "high" as const,
-        },
-        data: {
-          priority: "high",
-          wake_lock_timeout: "30000",
-        },
-      },
-      apns: {
-        payload: {
-          aps: {
-            sound: "default",
-            badge: 1,
-          },
-        },
-      },
-    };
-
-    const response = await admin.messaging().send(message);
-    console.log("Successfully sent water change done message:", response);
-  } catch (error) {
-    console.error("Error sending water change done notification:", error);
   }
 }
 
